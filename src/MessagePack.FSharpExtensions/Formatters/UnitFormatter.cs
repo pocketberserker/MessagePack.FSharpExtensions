@@ -2,7 +2,7 @@ using System;
 using MessagePack.Formatters;
 using Microsoft.FSharp.Core;
 
-namespace MessagePack.FSharp
+namespace MessagePack.FSharp.Formatters
 {
     public class UnitFormatter : IMessagePackFormatter<Unit>
     {

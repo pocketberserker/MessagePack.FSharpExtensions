@@ -4,6 +4,7 @@ using System.Reflection;
 using MessagePack.Formatters;
 using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
+using MessagePack.FSharp.Formatters;
 
 namespace MessagePack.FSharp
 {

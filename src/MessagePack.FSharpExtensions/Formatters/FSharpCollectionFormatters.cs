@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using MessagePack.Formatters;
 using Microsoft.FSharp.Collections;
 
-namespace MessagePack.FSharp
+namespace MessagePack.FSharp.Formatters
 {
     public class FSharpListFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpList<T>>
     {
