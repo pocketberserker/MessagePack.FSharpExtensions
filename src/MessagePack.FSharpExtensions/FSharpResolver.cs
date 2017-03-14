@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using MessagePack.Formatters;
+using Microsoft.FSharp.Core;
 using Microsoft.FSharp.Collections;
 
 namespace MessagePack.FSharp
 {
-    public class FSharpCollectionResolver : IFormatterResolver
+    public class FSharpResolver : IFormatterResolver
     {
-        public static IFormatterResolver Instance = new FSharpCollectionResolver();
+        public static IFormatterResolver Instance = new FSharpResolver();
 
-        FSharpCollectionResolver() { }
+        FSharpResolver() { }
 
         public IMessagePackFormatter<T> GetFormatter<T>()
         {
@@ -23,12 +24,12 @@ namespace MessagePack.FSharp
 
             static FormatterCache()
             {
-                formatter = (IMessagePackFormatter<T>)FSharpCollectionGetFormatterHelper.GetFormatter(typeof(T));
+                formatter = (IMessagePackFormatter<T>)FSharpGetFormatterHelper.GetFormatter(typeof(T));
             }
         }
     }
 
-    internal static class FSharpCollectionGetFormatterHelper
+    internal static class FSharpGetFormatterHelper
     {
         static readonly Dictionary<Type, Type> formatterMap = new Dictionary<Type, Type>()
         {
@@ -40,6 +41,11 @@ namespace MessagePack.FSharp
         internal static object GetFormatter(Type t)
         {
             var ti = t.GetTypeInfo();
+
+            if (t == typeof(Unit))
+            {
+                return new UnitFormatter();
+            }
 
             if (ti.IsGenericType)
             {

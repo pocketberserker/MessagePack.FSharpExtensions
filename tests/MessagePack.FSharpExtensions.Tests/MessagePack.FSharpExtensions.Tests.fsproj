@@ -3,7 +3,9 @@
     <TargetFramework>netcoreapp1.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="**/*.fs" />
+    <Compile Include="Helper.fs" />
+    <Compile Include="CollectionTest.fs" />
+    <Compile Include="UnitTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
