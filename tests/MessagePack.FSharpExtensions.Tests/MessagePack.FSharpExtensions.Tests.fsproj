@@ -6,6 +6,7 @@
     <Compile Include="Helper.fs" />
     <Compile Include="CollectionTest.fs" />
     <Compile Include="UnitTest.fs" />
+    <Compile Include="OptionTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.*" />

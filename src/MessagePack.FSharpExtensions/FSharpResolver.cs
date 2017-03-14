@@ -57,6 +57,10 @@ namespace MessagePack.FSharp
                 {
                     return CreateInstance(formatterType, ti.GenericTypeArguments);
                 }
+                else if (genericType.GetTypeInfo().IsFSharpOption())
+                {
+                    return CreateInstance(typeof(FSharpOptionFormatter<>), new[] { ti.GenericTypeArguments[0] });
+                }
             }
 
             return null;
@@ -65,6 +69,14 @@ namespace MessagePack.FSharp
         static object CreateInstance(Type genericType, Type[] genericTypeArguments, params object[] arguments)
         {
             return Activator.CreateInstance(genericType.MakeGenericType(genericTypeArguments), arguments);
+        }
+    }
+
+    internal static class ReflectionExtensions
+    {
+        public static bool IsFSharpOption(this TypeInfo type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(FSharpOption<>);
         }
     }
 }
