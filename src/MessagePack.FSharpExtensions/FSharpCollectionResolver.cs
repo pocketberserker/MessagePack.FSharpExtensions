@@ -33,6 +33,7 @@ namespace MessagePack.FSharp
         static readonly Dictionary<Type, Type> formatterMap = new Dictionary<Type, Type>()
         {
               {typeof(FSharpList<>), typeof(FSharpListFormatter<>)},
+              {typeof(FSharpMap<,>), typeof(FSharpMapFormatter<,>)},
         };
 
         internal static object GetFormatter(Type t)

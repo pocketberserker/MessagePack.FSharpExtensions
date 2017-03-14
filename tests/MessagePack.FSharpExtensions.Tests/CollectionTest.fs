@@ -5,24 +5,36 @@ open MessagePack
 open MessagePack.Resolvers
 open MessagePack.FSharp
 
-let setup () =
-  MessagePack.Resolvers.CompositeResolver.RegisterAndSetAsDefault(
-    FSharpCollectionResolver.Instance,
-    StandardResolver.Instance
-  )
+type WithFSharpDefaultResolver() =
+  interface IFormatterResolver with
+    member __.GetFormatter<'T>() =
+      match FSharpCollectionResolver.Instance.GetFormatter<'T>() with
+      | null -> StandardResolver.Instance.GetFormatter<'T>()
+      | x -> x
+
+let convert<'T> (value: 'T) =
+  let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
+  MessagePackSerializer.Deserialize<'T>(MessagePackSerializer.Serialize(value, resolver), resolver)
 
 [<Fact>]
 let ``fsharp list`` () =
 
-  setup ()
-
   let input: int list = []
-  let xs = MessagePackSerializer.Serialize(input)
-  let actual = MessagePackSerializer.Deserialize<int list>(xs)
+  let actual = convert input
   Assert.Equal(box input, box actual)
 
   let input = [1]
-  let xs = MessagePackSerializer.Serialize(input)
-  let actual = MessagePackSerializer.Deserialize<int list>(xs)
+  let actual = convert input
+  Assert.Equal(box input, box actual)
+
+[<Fact>]
+let ``fsharp map`` () =
+
+  let input= Map.empty<int, bool>
+  let actual = convert input
+  Assert.Equal(box input, box actual)
+
+  let input = Map.empty |> Map.add 0 true
+  let actual = convert input
   Assert.Equal(box input, box actual)
 

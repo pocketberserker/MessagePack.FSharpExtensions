@@ -27,4 +27,27 @@ namespace MessagePack.FSharp
             return ((IEnumerable<T>)source).GetEnumerator();
         }
     }
+
+    public class FSharpMapFormatter<TKey, TValue> : DictionaryFormatterBase<TKey, TValue, Tuple<TKey, TValue>[], IEnumerator<KeyValuePair<TKey, TValue>>, FSharpMap<TKey, TValue>>
+    {
+        protected override void Add(Tuple<TKey, TValue>[] collection, int index, TKey key, TValue value)
+        {
+            collection[index] = Tuple.Create(key, value);
+        }
+
+        protected override FSharpMap<TKey, TValue> Complete(Tuple<TKey, TValue>[] intermediateCollection)
+        {
+            return MapModule.OfArray(intermediateCollection);
+        }
+
+        protected override Tuple<TKey, TValue>[] Create(int count)
+        {
+            return new Tuple<TKey, TValue>[count];
+        }
+
+        protected override IEnumerator<KeyValuePair<TKey, TValue>> GetSourceEnumerator(FSharpMap<TKey, TValue> source)
+        {
+            return ((IEnumerable<KeyValuePair<TKey, TValue>>)source).GetEnumerator();
+        }
+    }
 }
