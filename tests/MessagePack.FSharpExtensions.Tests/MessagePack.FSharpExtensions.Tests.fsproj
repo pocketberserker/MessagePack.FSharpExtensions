@@ -8,6 +8,7 @@
     <Compile Include="UnitTest.fs" />
     <Compile Include="OptionTest.fs" />
     <Compile Include="RecordTest.fs" />
+    <Compile Include="DUTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.*" />

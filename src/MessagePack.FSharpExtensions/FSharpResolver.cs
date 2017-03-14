@@ -26,6 +26,15 @@ namespace MessagePack.FSharp
             static FormatterCache()
             {
                 formatter = (IMessagePackFormatter<T>)FSharpGetFormatterHelper.GetFormatter(typeof(T));
+
+                if (formatter == null)
+                {
+                    var f = DynamicUnionResolver.Instance.GetFormatter<T>();
+                    if (f != null)
+                    {
+                        formatter = f;
+                    }
+                }
             }
         }
     }
