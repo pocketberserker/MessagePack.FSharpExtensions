@@ -34,6 +34,7 @@ namespace MessagePack.FSharp
         {
               {typeof(FSharpList<>), typeof(FSharpListFormatter<>)},
               {typeof(FSharpMap<,>), typeof(FSharpMapFormatter<,>)},
+              {typeof(FSharpSet<>), typeof(FSharpSetFormatter<>)},
         };
 
         internal static object GetFormatter(Type t)

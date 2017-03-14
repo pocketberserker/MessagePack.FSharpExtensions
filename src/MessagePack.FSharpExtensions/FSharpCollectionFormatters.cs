@@ -50,4 +50,27 @@ namespace MessagePack.FSharp
             return ((IEnumerable<KeyValuePair<TKey, TValue>>)source).GetEnumerator();
         }
     }
+
+    public class FSharpSetFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpSet<T>>
+    {
+        protected override void Add(T[] collection, int index, T value)
+        {
+            collection[index] = value;
+        }
+
+        protected override FSharpSet<T> Complete(T[] intermediateCollection)
+        {
+            return SetModule.OfArray(intermediateCollection);
+        }
+
+        protected override T[] Create(int count)
+        {
+            return new T[count];
+        }
+
+        protected override IEnumerator<T> GetSourceEnumerator(FSharpSet<T> source)
+        {
+            return ((IEnumerable<T>)source).GetEnumerator();
+        }
+    }
 }
