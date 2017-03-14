@@ -6,5 +6,5 @@ open Xunit
 let ``unit value`` () =
 
   let input = ()
-  let actual = convert ()
+  let actual = convert input
   Assert.Equal(input, actual)
