@@ -23,9 +23,7 @@ let ``simple record`` () =
 [<MessagePackObject(true)>]
 type SimpleStringKeyRecord = {
   Prop1: int
-  [<Key(1)>]
   Prop2: int64
-  [<Key(2)>]
   Prop3: float32
 }
 
