@@ -10,7 +10,7 @@ namespace MessagePack.FSharp
 {
     public class FSharpResolver : IFormatterResolver
     {
-        public static IFormatterResolver Instance = new FSharpResolver();
+        public static readonly IFormatterResolver Instance = new FSharpResolver();
 
         FSharpResolver() { }
 
