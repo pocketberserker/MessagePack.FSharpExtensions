@@ -1,4 +1,3 @@
-using System;
 using MessagePack.Formatters;
 using Microsoft.FSharp.Core;
 
