@@ -14,7 +14,7 @@
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="1.0.1" />
+    <PackageReference Include="MessagePack" Version="1.0.2" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='net45'">
     <PackageReference Include="FSharp.Core" Version="4.0.0.1" />
