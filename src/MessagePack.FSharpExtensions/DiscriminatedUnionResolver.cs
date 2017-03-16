@@ -174,18 +174,14 @@ namespace MessagePack.FSharp
             var tag = getTag(type);
             var ti = type.GetTypeInfo();
 
-            Label notFoundType;
             // if(value == null) return WriteNil
-            if (ti.IsClass)
-            {
-                var elseBody = il.DefineLabel();
-                notFoundType = il.DefineLabel();
+            var elseBody = il.DefineLabel();
+            var notFoundType = il.DefineLabel();
 
-                il.EmitLdarg(3);
-                il.Emit(OpCodes.Brtrue_S, elseBody);
-                il.Emit(OpCodes.Br, notFoundType);
-                il.MarkLabel(elseBody);
-            }
+            il.EmitLoadArg(ti, 3);
+            il.Emit(OpCodes.Brtrue_S, elseBody);
+            il.Emit(OpCodes.Br, notFoundType);
+            il.MarkLabel(elseBody);
 
             var caseInfo = il.DeclareLocal(typeof(Microsoft.FSharp.Reflection.UnionCaseInfo));
 
@@ -241,14 +237,11 @@ namespace MessagePack.FSharp
             il.Emit(OpCodes.Ret);
 
             // else, return WriteNil
-            if (type.GetTypeInfo().IsClass)
-            {
-                il.MarkLabel(notFoundType);
-                il.EmitLdarg(1);
-                il.EmitLdarg(2);
-                il.EmitCall(MessagePackBinaryTypeInfo.WriteNil);
-                il.Emit(OpCodes.Ret);
-            }
+            il.MarkLabel(notFoundType);
+            il.EmitLdarg(1);
+            il.EmitLdarg(2);
+            il.EmitCall(MessagePackBinaryTypeInfo.WriteNil);
+            il.Emit(OpCodes.Ret);
         }
 
         // offset += ***(ref bytes, offset....
