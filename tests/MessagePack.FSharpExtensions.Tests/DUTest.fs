@@ -33,6 +33,26 @@ let ``string key`` () =
   let actual = convert input
   Assert.Equal(input, actual)
 
+let mutable beforeCallback = false
+let mutable afterCallback = false
+
+[<MessagePackObject>]
+type CallbackUnion =
+  | Call
+with
+  interface IMessagePackSerializationCallbackReceiver with
+    override this.OnBeforeSerialize() =
+      beforeCallback <- true
+    override this.OnAfterDeserialize() =
+      afterCallback <- true
+
+[<Fact>]
+let ``receive callback`` () =
+  let input = Call
+  let actual = convert input
+  Assert.True(beforeCallback)
+  Assert.True(afterCallback)
+
 [<Struct; MessagePackObject>]
 type StructUnion =
   | E
@@ -64,6 +84,26 @@ let ``builtin(string key)`` () =
   let input: Result<int, string> = Error "error"
   let actual = convert input
   Assert.Equal(input, actual)
+
+let mutable beforeStructCallback = false
+let mutable afterStructCallback = false
+
+[<Struct; MessagePackObject>]
+type StructCallbackUnion =
+  | StructCall
+with
+  interface IMessagePackSerializationCallbackReceiver with
+    override this.OnBeforeSerialize() =
+      beforeStructCallback <- true
+    override this.OnAfterDeserialize() =
+      afterStructCallback <- true
+
+[<Fact>]
+let ``receive callback struct union`` () =
+  let input = StructCall
+  let actual = convert input
+  Assert.True(beforeStructCallback)
+  Assert.True(afterStructCallback)
 
 module Compatibility =
 

@@ -225,7 +225,7 @@ namespace MessagePack.FSharp
             foreach (var item in switchLabels)
             {
                 il.MarkLabel(item.Label);
-                EmitSerializeUnionCase(il, ti, UnionSerializationInfo.CreateOrNull(type, item.Info));
+                EmitSerializeUnionCase(il, type, ti, UnionSerializationInfo.CreateOrNull(type, item.Info));
                 il.Emit(OpCodes.Br, loopEnd);
             }
 
@@ -260,8 +260,29 @@ namespace MessagePack.FSharp
             il.EmitStarg(2);
         }
 
-        static void EmitSerializeUnionCase(ILGenerator il, TypeInfo type, UnionSerializationInfo info)
+        static void EmitSerializeUnionCase(ILGenerator il, Type type, TypeInfo ti, UnionSerializationInfo info)
         {
+            // IMessagePackSerializationCallbackReceiver.OnBeforeSerialize()
+            if (ti.ImplementedInterfaces.Any(x => x == typeof(IMessagePackSerializationCallbackReceiver)))
+            {
+                // call directly
+                var runtimeMethods = type.GetRuntimeMethods().Where(x => x.Name == "OnBeforeSerialize").ToArray();
+                if (runtimeMethods.Length == 1)
+                {
+                    il.EmitLoadArg(ti, 3);
+                    il.Emit(OpCodes.Call, runtimeMethods[0]); // don't use EmitCall helper(must use 'Call')
+                }
+                else
+                {
+                    il.EmitLoadArg(ti, 3);
+                    if (info.IsStruct)
+                    {
+                        il.Emit(OpCodes.Box, type);
+                    }
+                    il.EmitCall(onBeforeSerialize);
+                }
+            }
+
             if (info.IsIntKey)
             {
                 // use Array
@@ -288,7 +309,7 @@ namespace MessagePack.FSharp
                     if (intKeyMap.TryGetValue(i, out member))
                     {
                         // offset += serialzie
-                        EmitSerializeValue(il, type, member);
+                        EmitSerializeValue(il, ti, member);
                     }
                     else
                     {
@@ -333,7 +354,7 @@ namespace MessagePack.FSharp
                     }
 
                     // offset += serialzie
-                    EmitSerializeValue(il, type, item);
+                    EmitSerializeValue(il, ti, item);
                 }
             }
         }
@@ -622,7 +643,45 @@ namespace MessagePack.FSharp
             }
 
             // create result union case
-            EmitNewObject(il, type, info, infoList);
+            var structLocal = EmitNewObject(il, type, info, infoList);
+
+            // IMessagePackSerializationCallbackReceiver.OnAfterDeserialize()
+            if (type.GetTypeInfo().ImplementedInterfaces.Any(x => x == typeof(IMessagePackSerializationCallbackReceiver)))
+            {
+                // call directly
+                var runtimeMethods = type.GetRuntimeMethods().Where(x => x.Name == "OnAfterDeserialize").ToArray();
+                if (runtimeMethods.Length == 1)
+                {
+                    if (info.IsClass)
+                    {
+                        il.Emit(OpCodes.Dup);
+                    }
+                    else
+                    {
+                        il.EmitLdloca(structLocal);
+                    }
+
+                    il.Emit(OpCodes.Call, runtimeMethods[0]); // don't use EmitCall helper(must use 'Call')
+                }
+                else
+                {
+                    if (info.IsStruct)
+                    {
+                        il.EmitLdloc(structLocal);
+                        il.Emit(OpCodes.Box, type);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Dup);
+                    }
+                    il.EmitCall(onAfterDeserialize);
+                }
+            }
+
+            if (info.IsStruct)
+            {
+                il.Emit(OpCodes.Ldloc, structLocal);
+            }
         }
 
         static void EmitDeserializeValue(ILGenerator il, DeserializeInfo info)
@@ -659,15 +718,32 @@ namespace MessagePack.FSharp
 
         static LocalBuilder EmitNewObject(ILGenerator il, Type type, UnionSerializationInfo info, DeserializeInfo[] members)
         {
-            foreach (var item in info.MethodParameters)
+            if (info.IsClass)
             {
-                var local = members.First(x => x.MemberInfo == item);
-                il.EmitLdloc(local.LocalField);
+                foreach (var item in info.MethodParameters)
+                {
+                    var local = members.First(x => x.MemberInfo == item);
+                    il.EmitLdloc(local.LocalField);
+                }
+
+                il.Emit(OpCodes.Call, info.NewMethod);
+
+                return null;
             }
+            else
+            {
+                var result = il.DeclareLocal(type);
+                foreach (var item in info.MethodParameters)
+                {
+                    var local = members.First(x => x.MemberInfo == item);
+                    il.EmitLdloc(local.LocalField);
+                }
 
-            il.Emit(OpCodes.Call, info.NewMethod);
+                il.Emit(OpCodes.Call, info.NewMethod);
+                il.Emit(OpCodes.Stloc, result);
 
-            return null;
+                return result; // struct returns local result field
+            }
         }
 
         // EmitInfos...
@@ -701,6 +777,9 @@ namespace MessagePack.FSharp
 #else
             typeof(Microsoft.FSharp.Reflection.FSharpType).GetTypeInfo().GetMethod("GetUnionCases", new Type[] { typeof(Type), typeof(FSharpOption<BindingFlags>)});
 #endif
+
+        static readonly MethodInfo onBeforeSerialize = typeof(IMessagePackSerializationCallbackReceiver).GetRuntimeMethod("OnBeforeSerialize", Type.EmptyTypes);
+        static readonly MethodInfo onAfterDeserialize = typeof(IMessagePackSerializationCallbackReceiver).GetRuntimeMethod("OnAfterDeserialize", Type.EmptyTypes);
 
         static class MessagePackBinaryTypeInfo
         {
