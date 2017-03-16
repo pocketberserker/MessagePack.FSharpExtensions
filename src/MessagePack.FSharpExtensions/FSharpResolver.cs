@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using MessagePack.Formatters;
 using Microsoft.FSharp.Core;
+using Microsoft.FSharp.Control;
 using Microsoft.FSharp.Collections;
 using MessagePack.FSharp.Formatters;
 
@@ -46,6 +47,7 @@ namespace MessagePack.FSharp
               {typeof(FSharpList<>), typeof(FSharpListFormatter<>)},
               {typeof(FSharpMap<,>), typeof(FSharpMapFormatter<,>)},
               {typeof(FSharpSet<>), typeof(FSharpSetFormatter<>)},
+              {typeof(FSharpAsync<>), typeof(FSharpAsyncFormatter<>)}
         };
 
         internal static object GetFormatter(Type t)
