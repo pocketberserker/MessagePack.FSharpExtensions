@@ -16,15 +16,8 @@ namespace MessagePack.FSharp.Formatters
 
         public Unit Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
         {
-            if (MessagePackBinary.IsNil(bytes, offset))
-            {
-                readSize = 1;
-                return null;
-            }
-            else
-            {
-              throw new Exception("expected nil, but was other type.");
-            }
+            MessagePackBinary.ReadNil(bytes, offset, out readSize);
+            return null;
         }
     }
 }
