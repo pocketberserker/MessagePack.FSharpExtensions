@@ -6,51 +6,71 @@ code: https://github.com/pocketberserker/MessagePack.FSharpExtensions/tree/53e63
 > dotnet run -c Release -p .\Benchmark\Benchmark.fsproj
 Int32[] serialization test
 
-Serialize::   MessagePack-CSharp   568.2237 ms
-Deserialize::   MessagePack-CSharp   631.8417 ms
+Serialize::   MessagePack-CSharp   491.9719 ms
+Deserialize::   MessagePack-CSharp   643.5013 ms
 
 List`1 serialization test
 
-Serialize::   MessagePack-CSharp   1056.3946 ms
-Deserialize::   MessagePack-CSharp   1088.9702 ms
+Serialize::   MessagePack-CSharp   1071.1078 ms
+Deserialize::   MessagePack-CSharp   1101.8369 ms
 
 IUnionSample serialization test
 
-Serialize::   MessagePack-CSharp   84.7853 ms
-Deserialize::   MessagePack-CSharp   2.7591 ms
+Serialize::   MessagePack-CSharp   82.4559 ms
+Deserialize::   MessagePack-CSharp   3.1598 ms
 
 ImmutableList`1 serialization test
 
-Serialize:: MessagePack.ImmutableCollection   6944.3367 ms
-Deserialize:: MessagePack.ImmutableCollection   34904.1267 ms
+Serialize:: MessagePack.ImmutableCollection   7078.4182 ms
+Deserialize:: MessagePack.ImmutableCollection   36616.2958 ms
 
 ImmutableHashSet`1 serialization test
 
-Serialize:: MessagePack.ImmutableCollection   18.5179 ms
-Deserialize:: MessagePack.ImmutableCollection   4.2072 ms
+Serialize:: MessagePack.ImmutableCollection   18.4046 ms
+Deserialize:: MessagePack.ImmutableCollection   3.3968 ms
 
 ImmutableDictionary`2 serialization test
 
-Serialize:: MessagePack.ImmutableCollection   12.2713 ms
-Deserialize:: MessagePack.ImmutableCollection   3.5704 ms
+Serialize:: MessagePack.ImmutableCollection   11.1133 ms
+Deserialize:: MessagePack.ImmutableCollection   3.0768 ms
 
 FSharpList`1 serialization test
 
-Serialize:: MessagePack.FSharpExtensions   2179.4189 ms
-Deserialize:: MessagePack.FSharpExtensions   2329.7652 ms
+Serialize:: MessagePack.FSharpExtensions   2176.6548 ms
+Deserialize:: MessagePack.FSharpExtensions   2494.91 ms
 
 FSharpSet`1 serialization test
 
-Serialize:: MessagePack.FSharpExtensions   6019.5603 ms
-Deserialize:: MessagePack.FSharpExtensions   93316.3144 ms
+Serialize:: MessagePack.FSharpExtensions   6526.0033 ms
+Deserialize:: MessagePack.FSharpExtensions   99160.0151 ms
 
 FSharpMap`2 serialization test
 
-Serialize:: MessagePack.FSharpExtensions   7594.696 ms
-Deserialize:: MessagePack.FSharpExtensions   103664.7891 ms
+Serialize:: MessagePack.FSharpExtensions   10935.7304 ms
+Deserialize:: MessagePack.FSharpExtensions   107831.3949 ms
 
 UnionSample serialization test
 
-Serialize:: MessagePack.FSharpExtensions   56.2192 ms
-Deserialize:: MessagePack.FSharpExtensions   1.9478 ms
+Serialize:: MessagePack.FSharpExtensions   62.5849 ms
+Deserialize:: MessagePack.FSharpExtensions   2.3053 ms
+
+FSharpList`1 serialization test
+
+Serialize:: ZeroFormatter.FSharpExtensions   1787.8018 ms
+Deserialize:: ZeroFormatter.FSharpExtensions   2021.9259 ms
+
+FSharpSet`1 serialization test
+
+Serialize:: ZeroFormatter.FSharpExtensions   7128.5002 ms
+Deserialize:: ZeroFormatter.FSharpExtensions   100144.4098 ms
+
+FSharpMap`2 serialization test
+
+Serialize:: ZeroFormatter.FSharpExtensions   16721.4715 ms
+Deserialize:: ZeroFormatter.FSharpExtensions   172189.1618 ms
+
+UnionSample serialization test
+
+Serialize:: ZeroFormatter.FSharpExtensions   46.8158 ms
+Deserialize:: ZeroFormatter.FSharpExtensions   461.1072 ms
 ```

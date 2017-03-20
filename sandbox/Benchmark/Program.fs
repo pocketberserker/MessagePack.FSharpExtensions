@@ -5,6 +5,8 @@ open MessagePack
 open MessagePack.Resolvers
 open MessagePack.ImmutableCollection
 open MessagePack.FSharp
+open ZeroFormatter
+open ZeroFormatter.FSharp
 open Benchmark
 
 [<MessagePackObject>]
@@ -12,31 +14,39 @@ type UnionSample =
   | Foo of XYZ : int
   | Bar of OPQ : string list
 
-let benchmark<'T> name (target: 'T) =
+module Benchmark =
 
   let iteration = 10000
 
-  let mutable data: byte [] = null
+  let private impl<'T> serialize (deserialize: byte [] -> 'T) name (target: 'T) =
 
-  printfn "%s serialization test" typeof<'T>.Name
-  printfn ""
+    let mutable data: byte [] = null
 
-  printf "Serialize:: "
+    printfn "%s serialization test" typeof<'T>.Name
+    printfn ""
 
-  using (new Measure(name)) (fun _ ->
-    for i in [|1..iteration|] do
-      data <- MessagePackSerializer.Serialize(target)
-  )
+    printf "Serialize:: "
 
-  printf "Deserialize:: "
+    using (new Measure(name)) (fun _ ->
+      for i in [|1..iteration|] do
+        data <- serialize target
+    )
 
-  using (new Measure(name)) (fun _ ->
-    for i in [|1..iteration|] do
-      MessagePackSerializer.Deserialize<'T>(data)
-      |> ignore
-  )
+    printf "Deserialize:: "
 
-  printfn ""
+    using (new Measure(name)) (fun _ ->
+      for i in [|1..iteration|] do
+        deserialize data
+        |> ignore
+    )
+
+    printfn ""
+
+  let msgpack<'T> name (target: 'T) =
+    impl<'T> (fun x -> MessagePackSerializer.Serialize(x)) (fun x -> MessagePackSerializer.Deserialize<'T>(x)) name target
+
+  let zeroformatter<'T> name (target: 'T) =
+    impl<'T> (fun x -> ZeroFormatterSerializer.Serialize(x)) (fun x -> ZeroFormatterSerializer.Deserialize<'T>(x)) name target
 
 [<EntryPoint>]
 let main _ =
@@ -48,40 +58,62 @@ let main _ =
   )
 
   [|1..10000|]
-  |> benchmark "MessagePack-CSharp"
+  |> Benchmark.msgpack "MessagePack-CSharp"
 
   ResizeArray([|1..10000|])
-  |> benchmark "MessagePack-CSharp"
+  |> Benchmark.msgpack "MessagePack-CSharp"
 
   FooClass(XYZ = 99999) :> IUnionSample
-  |> benchmark "MessagePack-CSharp"
+  |> Benchmark.msgpack "MessagePack-CSharp"
 
   ImmutableList<int>.Empty.AddRange([|1..10000|])
-  |> benchmark "MessagePack.ImmutableCollection"
+  |> Benchmark.msgpack "MessagePack.ImmutableCollection"
 
   let xs = ImmutableHashSet<int>.Empty
   for i in [|1..10000|] do xs.Add(i) |> ignore
   xs
-  |> benchmark "MessagePack.ImmutableCollection"
+  |> Benchmark.msgpack "MessagePack.ImmutableCollection"
 
   let xs = ImmutableDictionary<int, int>.Empty
   for i in [|1..10000|] do xs.Add(i, i) |> ignore
   xs
-  |> benchmark "MessagePack.ImmutableCollection"
+  |> Benchmark.msgpack "MessagePack.ImmutableCollection"
 
-  [1..10000]
-  |> benchmark "MessagePack.FSharpExtensions"
+  let ls = [1..10000]
 
-  [|1..10000|]
-  |> Set.ofArray
-  |> benchmark "MessagePack.FSharpExtensions"
+  ls
+  |> Benchmark.msgpack "MessagePack.FSharpExtensions"
 
-  [|1..10000|]
-  |> Array.map (fun x -> (x, x))
-  |> Map.ofArray
-  |> benchmark "MessagePack.FSharpExtensions"
+  let ss =
+    [|1..10000|]
+    |> Set.ofArray
 
-  Foo 99999
-  |> benchmark "MessagePack.FSharpExtensions"
+  ss
+  |> Benchmark.msgpack "MessagePack.FSharpExtensions"
+
+  let ms =
+    [|1..10000|]
+    |> Array.map (fun x -> (x, x))
+    |> Map.ofArray
+
+  ms
+  |> Benchmark.msgpack "MessagePack.FSharpExtensions"
+
+  let foo = Foo 99999
+
+  foo
+  |> Benchmark.msgpack "MessagePack.FSharpExtensions"
+
+  ls
+  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
+
+  ss
+  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
+
+  ms
+  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
+
+  foo
+  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
 
   0

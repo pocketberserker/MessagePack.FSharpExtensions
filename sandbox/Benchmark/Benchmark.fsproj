@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
     <PackageReference Include="FSharp.NET.Sdk" Version="1.0.*" PrivateAssets="All" />
+    <PackageReference Include="ZeroFormatter.FSharpExtensions" Version="0.4.0" />
     <ProjectReference Include="..\..\src\MessagePack.FSharpExtensions\MessagePack.FSharpExtensions.csproj" />
     <ProjectReference Include="..\BenchmarkCS\BenchmarkCS.csproj" />
   </ItemGroup>
