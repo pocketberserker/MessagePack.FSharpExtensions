@@ -839,7 +839,7 @@ namespace MessagePack.FSharp.Internal
             var contractAttr = ti.GetCustomAttribute<MessagePackObjectAttribute>();
 
             var isIntKey = true;
-            var intMemebrs = new Dictionary<int, EmittableMember>();
+            var intMembers = new Dictionary<int, EmittableMember>();
             var stringMembers = new Dictionary<string, EmittableMember>();
 
             if (contractAttr == null || contractAttr.KeyAsPropertyName)
@@ -869,7 +869,7 @@ namespace MessagePack.FSharp.Internal
                         PropertyInfo = item,
                         IntKey = hiddenIntKey++
                     };
-                    intMemebrs.Add(member.IntKey, member);
+                    intMembers.Add(member.IntKey, member);
                 }
             }
 
@@ -889,7 +889,7 @@ namespace MessagePack.FSharp.Internal
                     EmittableMember paramMember;
                     if (isIntKey)
                     {
-                        if (intMemebrs.TryGetValue(methodParamIndex, out paramMember))
+                        if (intMembers.TryGetValue(methodParamIndex, out paramMember))
                         {
                             if (item.ParameterType == paramMember.Type)
                             {
@@ -945,7 +945,7 @@ namespace MessagePack.FSharp.Internal
                 NewMethod = method,
                 MethodParameters = methodParameters.ToArray(),
                 IsIntKey = isIntKey,
-                Members = (isIntKey) ? intMemebrs.Values.ToArray() : stringMembers.Values.ToArray()
+                Members = (isIntKey) ? intMembers.Values.ToArray() : stringMembers.Values.ToArray()
             };
         }
 
