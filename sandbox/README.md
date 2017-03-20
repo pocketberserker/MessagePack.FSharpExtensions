@@ -1,6 +1,6 @@
 # Benchmark
 
-code: https://github.com/pocketberserker/MessagePack.FSharpExtensions/tree/53e63b347b1e6e36720d262940500b21ed1408ce
+code: https://github.com/pocketberserker/MessagePack.FSharpExtensions/tree/08abf76ad2e035b611fcda185e72b9d0a8e53e67
 
 ```
 > dotnet run -c Release -p .\Benchmark\Benchmark.fsproj
