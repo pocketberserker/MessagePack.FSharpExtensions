@@ -362,7 +362,7 @@ namespace MessagePack.FSharp
         static void EmitSerializeValue(ILGenerator il, TypeInfo type, UnionSerializationInfo.EmittableMember member)
         {
             var t = member.Type;
-            if (MessagePackBinary.IsMessagePackPrimitive(t))
+            if (IsOptimizeTargetType(t))
             {
                 EmitOffsetPlusEqual(il, null, () =>
                 {
@@ -688,7 +688,7 @@ namespace MessagePack.FSharp
         {
             var member = info.MemberInfo;
             var t = member.Type;
-            if (MessagePackBinary.IsMessagePackPrimitive(t))
+            if (IsOptimizeTargetType(t))
             {
                 il.EmitLdarg(1);
                 il.EmitLdarg(2);
@@ -744,6 +744,32 @@ namespace MessagePack.FSharp
 
                 return result; // struct returns local result field
             }
+        }
+
+        // https://github.com/neuecc/MessagePack-CSharp/blob/v1.1.1/src/MessagePack/Resolvers/DynamicObjectResolver.cs#L704
+        static bool IsOptimizeTargetType(Type type)
+        {
+            if (type == typeof(Int16)
+             || type == typeof(Int32)
+             || type == typeof(Int64)
+             || type == typeof(UInt16)
+             || type == typeof(UInt32)
+             || type == typeof(UInt64)
+             || type == typeof(Single)
+             || type == typeof(Double)
+             || type == typeof(bool)
+             || type == typeof(byte)
+             || type == typeof(sbyte)
+             || type == typeof(char)
+             // not includes DateTime and String and Binary.
+             //|| type == typeof(DateTime)
+             //|| type == typeof(string)
+             //|| type == typeof(byte[])
+             )
+            {
+                return true;
+            }
+            return false;
         }
 
         // EmitInfos...
