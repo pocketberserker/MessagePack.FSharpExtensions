@@ -20,6 +20,6 @@
     <PackageReference Include="FSharp.Core" Version="4.0.0.1" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard1.6'">
-    <PackageReference Include="FSharp.Core" Version="4.1.0.2" />
+    <PackageReference Include="FSharp.Core" Version="4.1.2" />
   </ItemGroup>
 </Project>
