@@ -23,6 +23,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using MessagePack.Formatters;
 using MessagePack.FSharp.Internal;
 #if !NETSTANDARD
@@ -69,6 +70,8 @@ namespace MessagePack.FSharp
             }
         }
 
+        static readonly Regex SubtractFullNameRegex = new Regex(@", Version=\d+.\d+.\d+.\d+, Culture=\w+, PublicKeyToken=\w+", RegexOptions.Compiled);
+
         static TypeInfo BuildType(Type type)
         {
             var ti = type.GetTypeInfo();
@@ -76,7 +79,7 @@ namespace MessagePack.FSharp
             var unionCases = FSharpType.GetUnionCases(type, null).OrderBy(x => x.Tag).ToArray();
 
             var formatterType = typeof(IMessagePackFormatter<>).MakeGenericType(type);
-            var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + type.FullName.Replace(".", "_") + "Formatter", TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
+            var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter", TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
 
             FieldBuilder keyToCaseMap = null; // Dictionary<int, UnionCaseInfo>
             FieldBuilder stringToKeyMap = null; // Dictionary<string, int>
