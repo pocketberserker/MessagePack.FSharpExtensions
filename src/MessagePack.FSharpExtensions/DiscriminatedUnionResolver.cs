@@ -377,7 +377,7 @@ namespace MessagePack.FSharp
                     }
                     else
                     {
-                        il.EmitCall(MessagePackBinaryTypeInfo.TypeInfo.GetDeclaredMethod("Write" + t.Name));
+                        il.EmitCall(MessagePackBinaryTypeInfo.TypeInfo.GetDeclaredMethods("Write" + t.Name).OrderByDescending(x => x.GetParameters().Length).First());
                     }
                 });
             }
@@ -702,7 +702,7 @@ namespace MessagePack.FSharp
                 }
                 else
                 {
-                    il.EmitCall(MessagePackBinaryTypeInfo.TypeInfo.GetDeclaredMethod("Read" + t.Name));
+                    il.EmitCall(MessagePackBinaryTypeInfo.TypeInfo.GetDeclaredMethods("Read" + t.Name).OrderByDescending(x => x.GetParameters().Length).First());
                 }
             }
             else
