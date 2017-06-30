@@ -3,6 +3,6 @@
     <TargetFramework>netstandard1.6</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack.ImmutableCollection" Version="1.0.3" />
+    <PackageReference Include="MessagePack.ImmutableCollection" Version="1.4.1" />
   </ItemGroup>
 </Project>
