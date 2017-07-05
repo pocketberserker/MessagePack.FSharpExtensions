@@ -1,3 +1,6 @@
+### 1.2.0 - July 5 2017
+* update dependencies(MessagePack 1.4.1)
+
 ### 1.1.0 - May 20 2017
 * Reduce class name length restrictions
 * update dependencies(FSharp.Core 4.1.17, MessagePack 1.2.2)
