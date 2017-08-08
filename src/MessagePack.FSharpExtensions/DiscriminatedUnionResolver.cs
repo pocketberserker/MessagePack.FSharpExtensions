@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
 using MessagePack.Formatters;
+using MessagePack.Internal;
 using MessagePack.FSharp.Internal;
 #if !NETSTANDARD
 using Microsoft.FSharp.Core;
@@ -82,19 +83,23 @@ namespace MessagePack.FSharp
             var unionCases = FSharpType.GetUnionCases(type, null).OrderBy(x => x.Tag).ToArray();
 
             var formatterType = typeof(IMessagePackFormatter<>).MakeGenericType(type);
-            var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter"  + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
+            var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter" + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
 
             FieldBuilder keyToCaseMap = null; // Dictionary<int, UnionCaseInfo>
-            FieldBuilder stringToKeyMap = null; // Dictionary<string, int>
+            var stringByteKeysFields = new FieldBuilder[unionCases.Length];
 
             // create map dictionary
             {
                 var method = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
                 keyToCaseMap = typeBuilder.DefineField("keyToCaseMap", typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>), FieldAttributes.Private | FieldAttributes.InitOnly);
-                stringToKeyMap = typeBuilder.DefineField("keyToJumpMap", typeof(Dictionary<string, int>), FieldAttributes.Private | FieldAttributes.InitOnly);
+
+                foreach(var unionCase in unionCases)
+                {
+                  stringByteKeysFields[unionCase.Tag] = typeBuilder.DefineField("stringByteKeysField" + unionCase.Tag, typeof(byte[][]), FieldAttributes.Private | FieldAttributes.InitOnly);
+                }
 
                 var il = method.GetILGenerator();
-                BuildConstructor(type, unionCases, method, keyToCaseMap, stringToKeyMap, il);
+                BuildConstructor(type, unionCases, method, keyToCaseMap, stringByteKeysFields, il);
             }
 
             {
@@ -111,13 +116,13 @@ namespace MessagePack.FSharp
                     new Type[] { typeof(byte[]), typeof(int), typeof(IFormatterResolver), typeof(int).MakeByRefType() });
 
                 var il = method.GetILGenerator();
-                BuildDeserialize(type, unionCases, method, stringToKeyMap, il);
+                BuildDeserialize(type, unionCases, method, stringByteKeysFields, il);
             }
 
             return typeBuilder.CreateTypeInfo();
         }
 
-        static void BuildConstructor(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, ConstructorInfo method, FieldBuilder keyToCaseMap, FieldBuilder stringToKeyMap, ILGenerator il)
+        static void BuildConstructor(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, ConstructorInfo method, FieldBuilder keyToCaseMap, FieldBuilder[] stringByteKeysFields, ILGenerator il)
         {
             il.EmitLdarg(0);
             il.Emit(OpCodes.Call, objectCtor);
@@ -151,23 +156,26 @@ namespace MessagePack.FSharp
                 il.Emit(OpCodes.Stfld, keyToCaseMap);
             }
             {
-                il.EmitLdarg(0);
-                il.EmitLdc_I4(infos.Length);
-                il.Emit(OpCodes.Newobj, keyMapDictionaryConstructor);
-
                 foreach (var info in infos)
                 {
+                    var fields = info.GetFields();
+                    il.EmitLdarg(0);
+                    il.EmitLdc_I4(fields.Length);
+                    il.Emit(OpCodes.Newarr, typeof(byte[]));
+
                     var index = 0;
-                    foreach (var field in info.GetFields())
+                    foreach (var field in fields)
                     {
                         il.Emit(OpCodes.Dup);
-                        il.Emit(OpCodes.Ldstr, info.Tag + field.Name);
                         il.EmitLdc_I4(index);
-                        il.EmitCall(keyMapDictionaryAdd);
+                        il.Emit(OpCodes.Ldstr, field.Name);
+                        il.EmitCall(MessagePackBinaryTypeInfo.GetEncodedStringBytes);
+                        il.Emit(OpCodes.Stelem_Ref);
                         index++;
                     }
+
+                    il.Emit(OpCodes.Stfld, stringByteKeysFields[info.Tag]);
                 }
-                il.Emit(OpCodes.Stfld, stringToKeyMap);
             }
 
             il.Emit(OpCodes.Ret);
@@ -401,7 +409,7 @@ namespace MessagePack.FSharp
         }
 
         // T Deserialize([arg:1]byte[] bytes, [arg:2]int offset, [arg:3]IFormatterResolver formatterResolver, [arg:4]out int readSize);
-        static void BuildDeserialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder stringToKeyMap, ILGenerator il)
+        static void BuildDeserialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder[] stringByteKeysFields, ILGenerator il)
         {
             // if(MessagePackBinary.IsNil) readSize = 1, return null;
             var falseLabel = il.DefineLabel();
@@ -476,7 +484,7 @@ namespace MessagePack.FSharp
             foreach (var item in switchLabels)
             {
                 il.MarkLabel(item.Label);
-                EmitDeserializeUnionCase(il, type, UnionSerializationInfo.CreateOrNull(type, item.Info), key, stringToKeyMap);
+                EmitDeserializeUnionCase(il, type, UnionSerializationInfo.CreateOrNull(type, item.Info), key, stringByteKeysFields[item.Info.Tag]);
                 il.Emit(OpCodes.Stloc, result);
                 il.Emit(OpCodes.Br, loopEnd);
             }
@@ -502,8 +510,13 @@ namespace MessagePack.FSharp
             il.EmitStarg(2);
         }
 
-        static void EmitDeserializeUnionCase(ILGenerator il, Type type, UnionSerializationInfo info, LocalBuilder unionKey, FieldBuilder stringToKeyMap)
+        static void EmitDeserializeUnionCase(ILGenerator il, Type type, UnionSerializationInfo info, LocalBuilder unionKey, FieldBuilder stringByteKeysField)
         {
+            // var startOffset = offset;
+            var startOffsetLocal = il.DeclareLocal(typeof(int)); // [loc:0]
+            il.EmitLdarg(2);
+            il.EmitStloc(startOffsetLocal);
+
             // var length = ReadMapHeader
             var length = il.DeclareLocal(typeof(int));
             il.EmitLdarg(1);
@@ -573,44 +586,101 @@ namespace MessagePack.FSharp
             }
 
             // Read Loop(for var i = 0; i< length; i++)
+            if (info.IsStringKey)
+            {
+                var automata = new AutomataDictionary();
+                for (int i = 0; i < info.Members.Length; i++)
+                {
+                    automata.Add(info.Members[i].StringKey, i);
+                }
+
+                var buffer = il.DeclareLocal(typeof(byte).MakeByRefType(), true);
+                var keyArraySegment = il.DeclareLocal(typeof(ArraySegment<byte>));
+                var longKey = il.DeclareLocal(typeof(ulong));
+                var p = il.DeclareLocal(typeof(byte*));
+                var rest = il.DeclareLocal(typeof(int));
+
+                // fixed (byte* buffer = &bytes[0]) {
+                il.EmitLdarg(1);
+                il.EmitLdc_I4(0);
+                il.Emit(OpCodes.Ldelema, typeof(byte));
+                il.EmitStloc(buffer);
+
+                // for (int i = 0; i < len; i++)
+                il.EmitIncrementFor(length, forILocal =>
+                {
+                    var readNext = il.DefineLabel();
+                    var loopEnd = il.DefineLabel();
+
+                    il.EmitLdarg(1);
+                    il.EmitLdarg(2);
+                    il.EmitLdarg(4);
+                    il.EmitCall(MessagePackBinaryTypeInfo.ReadStringSegment);
+                    il.EmitStloc(keyArraySegment);
+                    EmitOffsetPlusReadSize(il);
+
+                    // p = buffer + arraySegment.Offset
+                    il.EmitLdloc(buffer);
+                    il.Emit(OpCodes.Conv_I);
+                    il.EmitLdloca(keyArraySegment);
+                    il.EmitCall(typeof(ArraySegment<byte>).GetRuntimeProperty("Offset").GetGetMethod());
+                    il.Emit(OpCodes.Add);
+                    il.EmitStloc(p);
+
+                    // rest = arraySegment.Count
+                    il.EmitLdloca(keyArraySegment);
+                    il.EmitCall(typeof(ArraySegment<byte>).GetRuntimeProperty("Count").GetGetMethod());
+                    il.EmitStloc(rest);
+
+                    // if(rest == 0) goto End
+                    il.EmitLdloc(rest);
+                    il.Emit(OpCodes.Brfalse, readNext);
+
+                    // gen automata name lookup
+                    automata.EmitMatch(il, p, rest, longKey, x =>
+                    {
+                        var i = x.Value;
+                        if (infoList[i].MemberInfo != null)
+                        {
+                            EmitDeserializeValue(il, infoList[i]);
+                            il.Emit(OpCodes.Br, loopEnd);
+                        }
+                        else
+                        {
+                            il.Emit(OpCodes.Br, readNext);
+                        }
+                    }, () =>
+                    {
+                        il.Emit(OpCodes.Br, readNext);
+                    });
+
+                    il.MarkLabel(readNext);
+                    il.EmitLdarg(4);
+                    il.EmitLdarg(1);
+                    il.EmitLdarg(2);
+                    il.EmitCall(MessagePackBinaryTypeInfo.ReadNextBlock);
+                    il.Emit(OpCodes.Stind_I4);
+
+                    il.MarkLabel(loopEnd);
+                    EmitOffsetPlusReadSize(il);
+                });
+
+                // end fixed
+                il.Emit(OpCodes.Ldc_I4_0);
+                il.Emit(OpCodes.Conv_U);
+                il.EmitStloc(buffer);
+            }
+            else
             {
                 var key = il.DeclareLocal(typeof(int));
                 var switchDefault = il.DefineLabel();
-                var loopEnd = il.DefineLabel();
-                var stringKeyTrue = il.DefineLabel();
+
                 il.EmitIncrementFor(length, forILocal =>
                 {
-                    if (info.IsStringKey)
-                    {
-                        // get string key -> dictionary lookup
-                        il.EmitLdarg(0);
-                        il.Emit(OpCodes.Ldfld, stringToKeyMap);
-                        il.Emit(OpCodes.Ldloca, unionKey);
-                        il.Emit(OpCodes.Callvirt, intToString);
-                        il.EmitLdarg(1);
-                        il.EmitLdarg(2);
-                        il.EmitLdarg(4);
-                        il.EmitCall(MessagePackBinaryTypeInfo.ReadString);
-                        il.EmitCall(stringConcat);
-                        il.EmitLdloca(key);
-                        il.EmitCall(keyMapDictionaryTryGetValue);
-                        EmitOffsetPlusReadSize(il);
-                        il.Emit(OpCodes.Brtrue_S, stringKeyTrue);
+                    var loopEnd = il.DefineLabel();
 
-                        il.EmitLdarg(4);
-                        il.EmitLdarg(1);
-                        il.EmitLdarg(2);
-                        il.EmitCall(MessagePackBinaryTypeInfo.ReadNextBlock);
-                        il.Emit(OpCodes.Stind_I4);
-                        il.Emit(OpCodes.Br, loopEnd);
-
-                        il.MarkLabel(stringKeyTrue);
-                    }
-                    else
-                    {
-                        il.EmitLdloc(forILocal);
-                        il.EmitStloc(key);
-                    }
+                    il.EmitLdloc(forILocal);
+                    il.EmitStloc(key);
 
                     // switch... local = Deserialize
                     il.EmitLdloc(key);
@@ -647,6 +717,13 @@ namespace MessagePack.FSharp
                     EmitOffsetPlusReadSize(il);
                 });
             }
+
+            // finish readSize: readSize = offset - startOffset;
+            il.EmitLdarg(4);
+            il.EmitLdarg(2);
+            il.EmitLdloc(startOffsetLocal);
+            il.Emit(OpCodes.Sub);
+            il.Emit(OpCodes.Stind_I4);
 
             // create result union case
             var structLocal = EmitNewObject(il, type, info, infoList);
@@ -792,15 +869,8 @@ namespace MessagePack.FSharp
         static readonly MethodInfo caseMapDictionaryAdd = typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>).GetRuntimeMethod("Add", new[] { typeof(int), typeof(Microsoft.FSharp.Reflection.UnionCaseInfo) });
         static readonly MethodInfo caseMapDictionaryTryGetValue = typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>).GetRuntimeMethod("TryGetValue", new[] { typeof(int), refUnionCaseInfo });
 
-        static readonly ConstructorInfo keyMapDictionaryConstructor = typeof(Dictionary<string, int>).GetTypeInfo().DeclaredConstructors.First(x => { var p = x.GetParameters(); return p.Length == 1 && p[0].ParameterType == typeof(int); });
-        static readonly MethodInfo keyMapDictionaryAdd = typeof(Dictionary<string, int>).GetRuntimeMethod("Add", new[] { typeof(string), typeof(int) });
-        static readonly MethodInfo keyMapDictionaryTryGetValue = typeof(Dictionary<string, int>).GetRuntimeMethod("TryGetValue", new[] { typeof(string), refInt });
-
         static readonly ConstructorInfo invalidOperationExceptionConstructor = typeof(System.InvalidOperationException).GetTypeInfo().DeclaredConstructors.First(x => { var p = x.GetParameters(); return p.Length == 1 && p[0].ParameterType == typeof(string); });
         static readonly ConstructorInfo objectCtor = typeof(object).GetTypeInfo().DeclaredConstructors.First(x => x.GetParameters().Length == 0);
-
-        static readonly MethodInfo intToString = typeof(int).GetRuntimeMethod("ToString", new Type[] {});
-        static readonly MethodInfo stringConcat = typeof(System.String).GetRuntimeMethod("Concat", new[] { typeof(string), typeof(string) });
 
         static readonly Func<Type, MethodInfo> getTag = type => type.GetTypeInfo().GetProperty("Tag").GetGetMethod();
         static readonly MethodInfo getUnionCases =
@@ -817,6 +887,7 @@ namespace MessagePack.FSharp
         {
             public static TypeInfo TypeInfo = typeof(MessagePackBinary).GetTypeInfo();
 
+            public static readonly MethodInfo GetEncodedStringBytes = typeof(MessagePackBinary).GetRuntimeMethod("GetEncodedStringBytes", new[] { typeof(string) });
             public static MethodInfo WriteFixedMapHeaderUnsafe = typeof(MessagePackBinary).GetRuntimeMethod("WriteFixedMapHeaderUnsafe", new[] { refByte, typeof(int), typeof(int) });
             public static MethodInfo WriteFixedArrayHeaderUnsafe = typeof(MessagePackBinary).GetRuntimeMethod("WriteFixedArrayHeaderUnsafe", new[] { refByte, typeof(int), typeof(int) });
             public static MethodInfo WriteMapHeader = typeof(MessagePackBinary).GetRuntimeMethod("WriteMapHeader", new[] { refByte, typeof(int), typeof(int) });
@@ -827,7 +898,7 @@ namespace MessagePack.FSharp
             public static MethodInfo WriteNil = typeof(MessagePackBinary).GetRuntimeMethod("WriteNil", new[] { refByte, typeof(int) });
             public static MethodInfo ReadBytes = typeof(MessagePackBinary).GetRuntimeMethod("ReadBytes", new[] { typeof(byte[]), typeof(int), refInt });
             public static MethodInfo ReadInt32 = typeof(MessagePackBinary).GetRuntimeMethod("ReadInt32", new[] { typeof(byte[]), typeof(int), refInt });
-            public static MethodInfo ReadString = typeof(MessagePackBinary).GetRuntimeMethod("ReadString", new[] { typeof(byte[]), typeof(int), refInt });
+            public static MethodInfo ReadStringSegment = typeof(MessagePackBinary).GetRuntimeMethod("ReadStringSegment", new[] { typeof(byte[]), typeof(int), refInt });
             public static MethodInfo IsNil = typeof(MessagePackBinary).GetRuntimeMethod("IsNil", new[] { typeof(byte[]), typeof(int) });
             public static MethodInfo ReadNextBlock = typeof(MessagePackBinary).GetRuntimeMethod("ReadNextBlock", new[] { typeof(byte[]), typeof(int) });
             public static MethodInfo WriteStringUnsafe = typeof(MessagePackBinary).GetRuntimeMethod("WriteStringUnsafe", new[] { refByte, typeof(int), typeof(string), typeof(int) });
