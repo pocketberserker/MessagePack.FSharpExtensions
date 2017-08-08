@@ -5,7 +5,7 @@ using Microsoft.FSharp.Collections;
 
 namespace MessagePack.FSharp.Formatters
 {
-    public class FSharpListFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpList<T>>
+    public sealed class FSharpListFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpList<T>>
     {
         protected override void Add(T[] collection, int index, T value)
         {
@@ -28,7 +28,7 @@ namespace MessagePack.FSharp.Formatters
         }
     }
 
-    public class FSharpMapFormatter<TKey, TValue> : DictionaryFormatterBase<TKey, TValue, Tuple<TKey, TValue>[], IEnumerator<KeyValuePair<TKey, TValue>>, FSharpMap<TKey, TValue>>
+    public sealed class FSharpMapFormatter<TKey, TValue> : DictionaryFormatterBase<TKey, TValue, Tuple<TKey, TValue>[], IEnumerator<KeyValuePair<TKey, TValue>>, FSharpMap<TKey, TValue>>
     {
         protected override void Add(Tuple<TKey, TValue>[] collection, int index, TKey key, TValue value)
         {
@@ -51,7 +51,7 @@ namespace MessagePack.FSharp.Formatters
         }
     }
 
-    public class FSharpSetFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpSet<T>>
+    public sealed class FSharpSetFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpSet<T>>
     {
         protected override void Add(T[] collection, int index, T value)
         {

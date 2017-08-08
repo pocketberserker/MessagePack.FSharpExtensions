@@ -3,7 +3,7 @@ using Microsoft.FSharp.Core;
 
 namespace MessagePack.FSharp.Formatters
 {
-    public class FSharpOptionFormatter<T> : IMessagePackFormatter<FSharpOption<T>>
+    public sealed class FSharpOptionFormatter<T> : IMessagePackFormatter<FSharpOption<T>>
     {
         public int Serialize(ref byte[] bytes, int offset, FSharpOption<T> value, IFormatterResolver formatterResolver)
         {
@@ -31,7 +31,7 @@ namespace MessagePack.FSharp.Formatters
         }
     }
 
-    public class StaticFSharpOptionFormatter<T> : IMessagePackFormatter<FSharpOption<T>>
+    public sealed class StaticFSharpOptionFormatter<T> : IMessagePackFormatter<FSharpOption<T>>
     {
         readonly IMessagePackFormatter<T> underlyingFormatter;
 

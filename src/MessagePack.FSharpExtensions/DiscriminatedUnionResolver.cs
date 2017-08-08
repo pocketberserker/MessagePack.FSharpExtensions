@@ -33,7 +33,7 @@ using Microsoft.FSharp.Reflection;
 
 namespace MessagePack.FSharp
 {
-    public class DynamicUnionResolver : IFormatterResolver
+    public sealed class DynamicUnionResolver : IFormatterResolver
     {
         public static readonly DynamicUnionResolver Instance = new DynamicUnionResolver();
 

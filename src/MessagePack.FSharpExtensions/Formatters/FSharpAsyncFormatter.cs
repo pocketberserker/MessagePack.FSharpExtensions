@@ -3,7 +3,7 @@ using Microsoft.FSharp.Control;
 
 namespace MessagePack.FSharp.Formatters
 {
-    public class FSharpAsyncFormatter<T> : IMessagePackFormatter<FSharpAsync<T>>
+    public sealed class FSharpAsyncFormatter<T> : IMessagePackFormatter<FSharpAsync<T>>
     {
 
         public FSharpAsyncFormatter() { }

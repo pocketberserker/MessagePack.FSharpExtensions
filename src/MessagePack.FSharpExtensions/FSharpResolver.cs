@@ -9,7 +9,7 @@ using MessagePack.FSharp.Formatters;
 
 namespace MessagePack.FSharp
 {
-    public class FSharpResolver : IFormatterResolver
+    public sealed class FSharpResolver : IFormatterResolver
     {
         public static readonly IFormatterResolver Instance = new FSharpResolver();
 
