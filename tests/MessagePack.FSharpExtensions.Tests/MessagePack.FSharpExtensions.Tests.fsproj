@@ -9,6 +9,7 @@
     <Compile Include="OptionTest.fs" />
     <Compile Include="RecordTest.fs" />
     <Compile Include="DUTest.fs" />
+    <Compile Include="StructDUTest.fs" />
     <Compile Include="AsyncTest.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
