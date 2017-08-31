@@ -16,12 +16,9 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="1.5.0.1" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='net45'">
-    <PackageReference Include="FSharp.Core" Version="4.0.0.1" />
+    <PackageReference Include="FSharp.Core" Version="4.1.18" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard1.6'">
-    <PackageReference Include="FSharp.Core" Version="4.1.17" />
     <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
   </ItemGroup>
 </Project>
