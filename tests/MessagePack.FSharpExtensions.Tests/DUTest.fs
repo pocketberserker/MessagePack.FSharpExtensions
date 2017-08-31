@@ -161,7 +161,7 @@ module Compatibility =
 
   [<Union(0, typeof<CsD>)>]
   type CsStringKeyUnion = interface end
-  
+
   and [<MessagePackObject>]CsD() =
 
     [<Key("Prop")>]
@@ -217,7 +217,7 @@ module Compatibility =
     | actual -> Assert.True(false, sprintf "expected: CsF, but was: %A" actual)
 
     let input = G(99999999L, -123.43f)
-    match convert<StructUnion, CsStructUnion> input  |> box with
+    match convert<StructUnion, CsStructUnion> input |> box with
     | :? CsG as actual ->
       Assert.Equal(99999999L, actual.Item1)
       Assert.Equal(-123.43f, actual.Item2)
