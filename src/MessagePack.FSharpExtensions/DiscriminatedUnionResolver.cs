@@ -24,6 +24,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Threading;
 using MessagePack.Formatters;
 using MessagePack.FSharp.Internal;
 #if !NETSTANDARD
@@ -40,6 +41,8 @@ namespace MessagePack.FSharp
         const string ModuleName = "MessagePack.FSharp.DynamicUnionResolver";
 
         static readonly DynamicAssembly assembly;
+
+        static int nameSequence = 0;
 
         DynamicUnionResolver() { }
 
@@ -79,7 +82,7 @@ namespace MessagePack.FSharp
             var unionCases = FSharpType.GetUnionCases(type, null).OrderBy(x => x.Tag).ToArray();
 
             var formatterType = typeof(IMessagePackFormatter<>).MakeGenericType(type);
-            var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter", TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
+            var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter"  + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
 
             FieldBuilder keyToCaseMap = null; // Dictionary<int, UnionCaseInfo>
             FieldBuilder stringToKeyMap = null; // Dictionary<string, int>
