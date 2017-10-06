@@ -85,13 +85,11 @@ namespace MessagePack.FSharp
             var formatterType = typeof(IMessagePackFormatter<>).MakeGenericType(type);
             var typeBuilder = assembly.ModuleBuilder.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, "").Replace(".", "_") + "Formatter" + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
 
-            FieldBuilder keyToCaseMap = null; // Dictionary<int, UnionCaseInfo>
             var stringByteKeysFields = new FieldBuilder[unionCases.Length];
 
             // create map dictionary
             {
                 var method = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
-                keyToCaseMap = typeBuilder.DefineField("keyToCaseMap", typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>), FieldAttributes.Private | FieldAttributes.InitOnly);
 
                 foreach(var unionCase in unionCases)
                 {
@@ -99,7 +97,7 @@ namespace MessagePack.FSharp
                 }
 
                 var il = method.GetILGenerator();
-                BuildConstructor(type, unionCases, method, keyToCaseMap, stringByteKeysFields, il);
+                BuildConstructor(type, unionCases, method, stringByteKeysFields, il);
             }
 
             {
@@ -108,7 +106,7 @@ namespace MessagePack.FSharp
                     new Type[] { typeof(byte[]).MakeByRefType(), typeof(int), type, typeof(IFormatterResolver) });
 
                 var il = method.GetILGenerator();
-                BuildSerialize(type, unionCases, method, keyToCaseMap, stringByteKeysFields, il);
+                BuildSerialize(type, unionCases, method, stringByteKeysFields, il);
             }
             {
                 var method = typeBuilder.DefineMethod("Deserialize", MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual,
@@ -122,39 +120,11 @@ namespace MessagePack.FSharp
             return typeBuilder.CreateTypeInfo();
         }
 
-        static void BuildConstructor(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, ConstructorInfo method, FieldBuilder keyToCaseMap, FieldBuilder[] stringByteKeysFields, ILGenerator il)
+        static void BuildConstructor(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, ConstructorInfo method, FieldBuilder[] stringByteKeysFields, ILGenerator il)
         {
             il.EmitLdarg(0);
             il.Emit(OpCodes.Call, objectCtor);
 
-            il.DeclareLocal(typeof(Microsoft.FSharp.Reflection.UnionCaseInfo []));
-
-            il.Emit(OpCodes.Ldtoken, type);
-            il.EmitCall(OpCodes.Call, typeof(Type).GetTypeInfo().GetMethod("GetTypeFromHandle"), null);
-            il.Emit(OpCodes.Ldnull); // equal FSharpOpion<T>.None
-            il.Emit(OpCodes.Call, getUnionCases);
-            il.Emit(OpCodes.Stloc_0);
-
-            {
-                il.EmitLdarg(0);
-                il.EmitLdc_I4(infos.Length);
-                il.Emit(OpCodes.Newobj, caseMapDictionaryConstructor);
-
-                var index = 0;
-                foreach (var item in infos)
-                {
-                    il.Emit(OpCodes.Dup);
-                    il.EmitLdc_I4(item.Tag);
-                    il.Emit(OpCodes.Ldloc_0);
-                    il.Emit(OpCodes.Ldc_I4, index);
-                    il.Emit(OpCodes.Ldelem_Ref);
-                    il.EmitCall(caseMapDictionaryAdd);
-
-                    index++;
-                }
-
-                il.Emit(OpCodes.Stfld, keyToCaseMap);
-            }
             {
                 foreach (var info in infos)
                 {
@@ -183,7 +153,7 @@ namespace MessagePack.FSharp
 
 
         // int Serialize([arg:1]ref byte[] bytes, [arg:2]int offset, [arg:3]T value, [arg:4]IFormatterResolver formatterResolver);
-        static void BuildSerialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder keyToCaseMap, FieldBuilder[] stringByteKeysFields, ILGenerator il)
+        static void BuildSerialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder[] stringByteKeysFields, ILGenerator il)
         {
             var tag = getTag(type);
             var ti = type.GetTypeInfo();
@@ -196,16 +166,6 @@ namespace MessagePack.FSharp
             il.Emit(OpCodes.Brtrue_S, elseBody);
             il.Emit(OpCodes.Br, notFoundType);
             il.MarkLabel(elseBody);
-
-            var caseInfo = il.DeclareLocal(typeof(Microsoft.FSharp.Reflection.UnionCaseInfo));
-
-            il.EmitLoadThis();
-            il.EmitLdfld(keyToCaseMap);
-            il.EmitLoadArg(ti, 3);
-            il.EmitCall(tag);
-            il.EmitLdloca(caseInfo);
-            il.EmitCall(caseMapDictionaryTryGetValue);
-            il.Emit(OpCodes.Brfalse, notFoundType);
 
             // var startOffset = offset;
             var startOffsetLocal = il.DeclareLocal(typeof(int));
@@ -884,20 +844,10 @@ namespace MessagePack.FSharp
         static readonly Func<Type, MethodInfo> getSerialize = t => typeof(IMessagePackFormatter<>).MakeGenericType(t).GetRuntimeMethod("Serialize", new[] { refByte, typeof(int), t, typeof(IFormatterResolver) });
         static readonly Func<Type, MethodInfo> getDeserialize = t => typeof(IMessagePackFormatter<>).MakeGenericType(t).GetRuntimeMethod("Deserialize", new[] { typeof(byte[]), typeof(int), typeof(IFormatterResolver), refInt });
 
-        static readonly ConstructorInfo caseMapDictionaryConstructor = typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>).GetTypeInfo().DeclaredConstructors.First(x => { var p = x.GetParameters(); return p.Length == 1 && p[0].ParameterType == typeof(int); });
-        static readonly MethodInfo caseMapDictionaryAdd = typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>).GetRuntimeMethod("Add", new[] { typeof(int), typeof(Microsoft.FSharp.Reflection.UnionCaseInfo) });
-        static readonly MethodInfo caseMapDictionaryTryGetValue = typeof(Dictionary<int, Microsoft.FSharp.Reflection.UnionCaseInfo>).GetRuntimeMethod("TryGetValue", new[] { typeof(int), refUnionCaseInfo });
-
         static readonly ConstructorInfo invalidOperationExceptionConstructor = typeof(System.InvalidOperationException).GetTypeInfo().DeclaredConstructors.First(x => { var p = x.GetParameters(); return p.Length == 1 && p[0].ParameterType == typeof(string); });
         static readonly ConstructorInfo objectCtor = typeof(object).GetTypeInfo().DeclaredConstructors.First(x => x.GetParameters().Length == 0);
 
         static readonly Func<Type, MethodInfo> getTag = type => type.GetTypeInfo().GetProperty("Tag").GetGetMethod();
-        static readonly MethodInfo getUnionCases =
-#if NETSTANDARD
-            FSharpType.getUnionCases;
-#else
-            typeof(Microsoft.FSharp.Reflection.FSharpType).GetTypeInfo().GetMethod("GetUnionCases", new Type[] { typeof(Type), typeof(FSharpOption<BindingFlags>)});
-#endif
 
         static readonly MethodInfo onBeforeSerialize = typeof(IMessagePackSerializationCallbackReceiver).GetRuntimeMethod("OnBeforeSerialize", Type.EmptyTypes);
         static readonly MethodInfo onAfterDeserialize = typeof(IMessagePackSerializationCallbackReceiver).GetRuntimeMethod("OnAfterDeserialize", Type.EmptyTypes);
