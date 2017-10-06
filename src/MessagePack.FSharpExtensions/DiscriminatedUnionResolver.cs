@@ -108,7 +108,7 @@ namespace MessagePack.FSharp
                     new Type[] { typeof(byte[]).MakeByRefType(), typeof(int), type, typeof(IFormatterResolver) });
 
                 var il = method.GetILGenerator();
-                BuildSerialize(type, unionCases, method, keyToCaseMap, il);
+                BuildSerialize(type, unionCases, method, keyToCaseMap, stringByteKeysFields, il);
             }
             {
                 var method = typeBuilder.DefineMethod("Deserialize", MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual,
@@ -183,7 +183,7 @@ namespace MessagePack.FSharp
 
 
         // int Serialize([arg:1]ref byte[] bytes, [arg:2]int offset, [arg:3]T value, [arg:4]IFormatterResolver formatterResolver);
-        static void BuildSerialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder keyToCaseMap, ILGenerator il)
+        static void BuildSerialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder keyToCaseMap, FieldBuilder[] stringByteKeysFields, ILGenerator il)
         {
             var tag = getTag(type);
             var ti = type.GetTypeInfo();
@@ -239,7 +239,7 @@ namespace MessagePack.FSharp
             foreach (var item in switchLabels)
             {
                 il.MarkLabel(item.Label);
-                EmitSerializeUnionCase(il, type, ti, UnionSerializationInfo.CreateOrNull(type, item.Info));
+                EmitSerializeUnionCase(il, type, ti, UnionSerializationInfo.CreateOrNull(type, item.Info), stringByteKeysFields[item.Info.Tag]);
                 il.Emit(OpCodes.Br, loopEnd);
             }
 
@@ -274,7 +274,7 @@ namespace MessagePack.FSharp
             il.EmitStarg(2);
         }
 
-        static void EmitSerializeUnionCase(ILGenerator il, Type type, TypeInfo ti, UnionSerializationInfo info)
+        static void EmitSerializeUnionCase(ILGenerator il, Type type, TypeInfo ti, UnionSerializationInfo info, FieldBuilder stringByteKeysField)
         {
             // IMessagePackSerializationCallbackReceiver.OnBeforeSerialize()
             if (ti.ImplementedInterfaces.Any(x => x == typeof(IMessagePackSerializationCallbackReceiver)))
@@ -353,19 +353,38 @@ namespace MessagePack.FSharp
                     }
                 });
 
+                var index = 0;
                 foreach (var item in info.Members)
                 {
                     // offset += writekey
-                    if (info.IsStringKey)
+                    EmitOffsetPlusEqual(il, null, () =>
                     {
-                        EmitOffsetPlusEqual(il, null, () =>
+                        il.EmitLdarg(0);
+                        il.EmitLdfld(stringByteKeysField);
+                        il.EmitLdc_I4(index);
+                        il.Emit(OpCodes.Ldelem_Ref);
+
+                        // Optimize, WriteRaw(Unity, large) or UnsafeMemory32/64.WriteRawX
+#if NETSTANDARD
+                        var valueLen = MessagePackBinary.GetEncodedStringBytes(item.StringKey).Length;
+                        if (valueLen <= MessagePackRange.MaxFixStringLength)
                         {
-                            // embed string and bytesize
-                            il.Emit(OpCodes.Ldstr, item.StringKey);
-                            il.EmitLdc_I4(StringEncoding.UTF8.GetByteCount(item.StringKey));
-                            il.EmitCall(MessagePackBinaryTypeInfo.WriteStringUnsafe);
-                        });
-                    }
+                            if (UnsafeMemory.Is32Bit)
+                            {
+                                il.EmitCall(typeof(UnsafeMemory32).GetRuntimeMethod("WriteRaw" + valueLen, new[] { refByte, typeof(int), typeof(byte[]) }));
+                            }
+                            else
+                            {
+                                il.EmitCall(typeof(UnsafeMemory64).GetRuntimeMethod("WriteRaw" + valueLen, new[] { refByte, typeof(int), typeof(byte[]) }));
+                            }
+                        }
+                        else
+#endif
+                        {
+                            il.EmitCall(MessagePackBinaryTypeInfo.WriteRaw);
+                        }
+                        index++;
+                    });
 
                     // offset += serialzie
                     EmitSerializeValue(il, ti, item);
@@ -901,7 +920,7 @@ namespace MessagePack.FSharp
             public static MethodInfo ReadStringSegment = typeof(MessagePackBinary).GetRuntimeMethod("ReadStringSegment", new[] { typeof(byte[]), typeof(int), refInt });
             public static MethodInfo IsNil = typeof(MessagePackBinary).GetRuntimeMethod("IsNil", new[] { typeof(byte[]), typeof(int) });
             public static MethodInfo ReadNextBlock = typeof(MessagePackBinary).GetRuntimeMethod("ReadNextBlock", new[] { typeof(byte[]), typeof(int) });
-            public static MethodInfo WriteStringUnsafe = typeof(MessagePackBinary).GetRuntimeMethod("WriteStringUnsafe", new[] { refByte, typeof(int), typeof(string), typeof(int) });
+            public static MethodInfo WriteRaw = typeof(MessagePackBinary).GetRuntimeMethod("WriteRaw", new[] { refByte, typeof(int), typeof(byte[]) });
 
             public static MethodInfo ReadArrayHeader = typeof(MessagePackBinary).GetRuntimeMethod("ReadArrayHeader", new[] { typeof(byte[]), typeof(int), refInt });
             public static MethodInfo ReadMapHeader = typeof(MessagePackBinary).GetRuntimeMethod("ReadMapHeader", new[] { typeof(byte[]), typeof(int), refInt });
