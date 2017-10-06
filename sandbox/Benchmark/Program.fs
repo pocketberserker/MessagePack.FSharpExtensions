@@ -5,14 +5,16 @@ open MessagePack
 open MessagePack.Resolvers
 open MessagePack.ImmutableCollection
 open MessagePack.FSharp
-open ZeroFormatter
-open ZeroFormatter.FSharp
 open Benchmark
 
 [<MessagePackObject>]
 type UnionSample =
   | Foo of XYZ : int
   | Bar of OPQ : string list
+
+type StringKeyUnionSample =
+  | StringFoo of XYZ : int
+  | StringBar of OPQ : string list
 
 module Benchmark =
 
@@ -44,9 +46,6 @@ module Benchmark =
 
   let msgpack<'T> name (target: 'T) =
     impl<'T> (fun x -> MessagePackSerializer.Serialize(x)) (fun x -> MessagePackSerializer.Deserialize<'T>(x)) name target
-
-  let zeroformatter<'T> name (target: 'T) =
-    impl<'T> (fun x -> ZeroFormatterSerializer.Serialize(x)) (fun x -> ZeroFormatterSerializer.Deserialize<'T>(x)) name target
 
 [<EntryPoint>]
 let main _ =
@@ -99,21 +98,10 @@ let main _ =
   ms
   |> Benchmark.msgpack "MessagePack.FSharpExtensions"
 
-  let foo = Foo 99999
-
-  foo
+  Foo 99999
   |> Benchmark.msgpack "MessagePack.FSharpExtensions"
 
-  ls
-  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
-
-  ss
-  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
-
-  ms
-  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
-
-  foo
-  |> Benchmark.zeroformatter "ZeroFormatter.FSharpExtensions"
+  StringFoo 99999
+  |> Benchmark.msgpack "MessagePack.FSharpExtensions"
 
   0
