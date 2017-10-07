@@ -390,6 +390,8 @@ namespace MessagePack.FSharp
         // T Deserialize([arg:1]byte[] bytes, [arg:2]int offset, [arg:3]IFormatterResolver formatterResolver, [arg:4]out int readSize);
         static void BuildDeserialize(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo[] infos, MethodBuilder method, FieldBuilder[] stringByteKeysFields, ILGenerator il)
         {
+            var ti = type.GetTypeInfo();
+
             // if(MessagePackBinary.IsNil) readSize = 1, return null;
             var falseLabel = il.DefineLabel();
             il.EmitLdarg(1);
@@ -397,7 +399,7 @@ namespace MessagePack.FSharp
             il.EmitCall(MessagePackBinaryTypeInfo.IsNil);
             il.Emit(OpCodes.Brfalse_S, falseLabel);
 
-            if (type.GetTypeInfo().IsClass)
+            if (ti.IsClass)
             {
                 il.EmitLdarg(4);
                 il.EmitLdc_I4(1);
@@ -444,8 +446,11 @@ namespace MessagePack.FSharp
             // switch->read
             var result = il.DeclareLocal(type);
             var loopEnd = il.DefineLabel();
-            il.Emit(OpCodes.Ldnull);
-            il.EmitStloc(result);
+            if(ti.IsClass)
+            {
+                il.Emit(OpCodes.Ldnull);
+                il.EmitStloc(result);
+            }
             il.Emit(OpCodes.Ldloc, key);
 
             var switchLabels = infos.Select(x => new { Label = il.DefineLabel(), Info = x }).ToArray();

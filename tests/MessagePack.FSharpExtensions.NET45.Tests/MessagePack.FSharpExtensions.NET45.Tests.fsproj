@@ -9,6 +9,8 @@
     <Compile Include="../MessagePack.FSharpExtensions.Tests/OptionTest.fs" />
     <Compile Include="../MessagePack.FSharpExtensions.Tests/RecordTest.fs" />
     <Compile Include="../MessagePack.FSharpExtensions.Tests/DUTest.fs" />
+    <Compile Include="../MessagePack.FSharpExtensions.Tests/StructDUTest.fs" />
+    <Compile Include="../MessagePack.FSharpExtensions.Tests/AsyncTest.fs" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FSharp.Core" Version="4.1.*" />
