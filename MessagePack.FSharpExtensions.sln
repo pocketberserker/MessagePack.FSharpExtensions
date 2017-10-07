@@ -11,7 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D6B163A5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.FSharpExtensions.Tests", "tests\MessagePack.FSharpExtensions.Tests\MessagePack.FSharpExtensions.Tests.fsproj", "{4FE39CF9-CEC0-4ABE-9965-96662D89EFEC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.FSharpExtensions.NET45.Tests", "tests\MessagePack.FSharpExtensions.NET45.Tests\MessagePack.FSharpExtensions.NET45.Tests.fsproj", "{BEDA08F8-4265-4584-A087-DA39658607A2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessagePack.FSharpExtensions.NET.Tests", "tests\MessagePack.FSharpExtensions.NET.Tests\MessagePack.FSharpExtensions.NET.Tests.fsproj", "{BEDA08F8-4265-4584-A087-DA39658607A2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sandbox", "sandbox", "{3722C84F-8F1C-4C5B-AFB5-EACF3F533383}"
 EndProject
