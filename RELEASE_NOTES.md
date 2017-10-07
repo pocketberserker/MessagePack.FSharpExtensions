@@ -1,3 +1,8 @@
+### 1.3.0 - October 7 2017
+* improve performance
+* update dependencies(FSharp.Core 4.1.18, MessagePack 1.6.2)
+* fix struct union deserialization bug
+
 ### 1.2.0 - July 5 2017
 * update dependencies(MessagePack 1.4.1)
 
