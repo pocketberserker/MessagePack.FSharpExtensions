@@ -18,5 +18,5 @@ test: off
 build_script:
 - cmd: dotnet restore
 - cmd: dotnet test ./tests/MessagePack.FSharpExtensions.Tests/MessagePack.FSharpExtensions.Tests.fsproj
-- cmd: dotnet test ./tests/MessagePack.FSharpExtensions.NET45.Tests/MessagePack.FSharpExtensions.NET45.Tests.fsproj
+- cmd: dotnet test ./tests/MessagePack.FSharpExtensions.NET.Tests/MessagePack.FSharpExtensions.NET.Tests.fsproj
 
