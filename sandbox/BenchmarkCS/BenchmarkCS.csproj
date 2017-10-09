@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.6</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack.ImmutableCollection" Version="1.6.1.2" />
+    <PackageReference Include="MessagePack.ImmutableCollection" Version="1.7.0" />
   </ItemGroup>
 </Project>

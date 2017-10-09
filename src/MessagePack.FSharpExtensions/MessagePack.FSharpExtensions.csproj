@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Version>1.3.0</Version>
-    <TargetFrameworks>netstandard1.6;net45</TargetFrameworks>
-    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <TargetFrameworks>netstandard2.0;net45</TargetFrameworks>
     <Authors>pocketberserker</Authors>
     <Owners>pocketberserker</Owners>
     <PackageProjectUrl>https://github.com/pocketberserker/MessagePack.FSharpExtensions</PackageProjectUrl>
@@ -11,14 +10,17 @@
     <Description>MessagePack extensions for F#</Description>
     <PackageTags>F#;fsharp;Msgpack;MessagePack;Serialization;Formatter;Serializer</PackageTags>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard1.6'">
+  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="1.6.2" />
+    <PackageReference Include="MessagePack" Version="1.7.0" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)'=='net45'">
     <PackageReference Include="FSharp.Core" Version="4.1.18" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard1.6'">
+  <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <PackageReference Include="FSharp.Core" Version="4.2.3" />
     <PackageReference Include="System.Text.Encoding.Extensions" Version="4.3.0" />
   </ItemGroup>
 </Project>
