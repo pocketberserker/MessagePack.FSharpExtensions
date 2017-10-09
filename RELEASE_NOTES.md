@@ -1,3 +1,7 @@
+### 1.4.0 - October 10 2017
+* support netstandard2.0(use FSharp.Core 4.2.x)
+* drop netstandard1.6
+
 ### 1.3.0 - October 7 2017
 * improve performance
 * update dependencies(FSharp.Core 4.1.18, MessagePack 1.6.2)
