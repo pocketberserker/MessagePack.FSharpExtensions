@@ -910,6 +910,8 @@ namespace MessagePack.FSharp.Internal
 
         public static UnionSerializationInfo CreateOrNull(Type type, Microsoft.FSharp.Reflection.UnionCaseInfo caseInfo)
         {
+            type = caseInfo.DeclaringType;
+
             var ti = type.GetTypeInfo();
             var isClass = ti.IsClass;
 
