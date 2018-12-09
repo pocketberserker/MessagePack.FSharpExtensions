@@ -197,3 +197,4 @@ temp/
 .nuget/
 .vs/
 
+.idea/
