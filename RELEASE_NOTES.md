@@ -1,3 +1,7 @@
+### 1.4.1 - January 9 2019
+* Fix signalr interop #2
+* re-support netstandard1.6
+
 ### 1.4.0 - October 10 2017
 * support netstandard2.0(use FSharp.Core 4.2.x)
 * drop netstandard1.6
