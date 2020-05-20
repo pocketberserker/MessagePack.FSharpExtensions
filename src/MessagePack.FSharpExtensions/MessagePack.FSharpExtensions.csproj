@@ -12,7 +12,7 @@
     <PackageTags>F#;fsharp;Msgpack;MessagePack;Serialization;Formatter;Serializer</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="1.7.3.4" />
+    <PackageReference Include="MessagePack" Version="2.1.115" />
     <PackageReference Include="FSharp.Core" Version="4.7.1" />
   </ItemGroup>
 </Project>

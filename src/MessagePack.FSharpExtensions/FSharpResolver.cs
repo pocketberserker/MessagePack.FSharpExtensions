@@ -13,27 +13,27 @@ namespace MessagePack.FSharp
     {
         public static readonly IFormatterResolver Instance = new FSharpResolver();
 
-        FSharpResolver() { }
+        private FSharpResolver() { }
 
         public IMessagePackFormatter<T> GetFormatter<T>()
         {
-            return FormatterCache<T>.formatter;
+            return FormatterCache<T>.Formatter;
         }
 
-        static class FormatterCache<T>
+        private static class FormatterCache<T>
         {
-            public static readonly IMessagePackFormatter<T> formatter;
+            internal static readonly IMessagePackFormatter<T> Formatter;
 
             static FormatterCache()
             {
-                formatter = (IMessagePackFormatter<T>)FSharpGetFormatterHelper.GetFormatter(typeof(T));
+                Formatter = (IMessagePackFormatter<T>)FSharpGetFormatterHelper.GetFormatter(typeof(T));
 
-                if (formatter == null)
+                if (Formatter == null)
                 {
                     var f = DynamicUnionResolver.Instance.GetFormatter<T>();
                     if (f != null)
                     {
-                        formatter = f;
+                        Formatter = f;
                     }
                 }
             }
@@ -42,7 +42,7 @@ namespace MessagePack.FSharp
 
     internal static class FSharpGetFormatterHelper
     {
-        static readonly Dictionary<Type, Type> formatterMap = new Dictionary<Type, Type>()
+        private static readonly Dictionary<Type, Type> formatterMap = new Dictionary<Type, Type>()
         {
               {typeof(FSharpList<>), typeof(FSharpListFormatter<>)},
               {typeof(FSharpMap<,>), typeof(FSharpMapFormatter<,>)},
@@ -77,7 +77,7 @@ namespace MessagePack.FSharp
             return null;
         }
 
-        static object CreateInstance(Type genericType, Type[] genericTypeArguments, params object[] arguments)
+        private static object CreateInstance(Type genericType, Type[] genericTypeArguments, params object[] arguments)
         {
             return Activator.CreateInstance(genericType.MakeGenericType(genericTypeArguments), arguments);
         }

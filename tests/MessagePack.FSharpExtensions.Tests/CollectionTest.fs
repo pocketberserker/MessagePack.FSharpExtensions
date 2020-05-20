@@ -6,22 +6,22 @@ open Xunit
 let ``fsharp list`` () =
 
   let input: int list = []
-  let actual = convert input
+  let actual = convertEq input
   Assert.Equal(box input, box actual)
 
   let input = [1]
-  let actual = convert input
+  let actual = convertEq input
   Assert.Equal(box input, box actual)
 
 [<Fact>]
 let ``fsharp map`` () =
 
   let input= Map.empty<int, bool>
-  let actual = convert input
+  let actual = convertEq input
   Assert.Equal(box input, box actual)
 
   let input = Map.empty |> Map.add 0 true
-  let actual = convert input
+  let actual = convertEq input
   Assert.Equal(box input, box actual)
 
 [<Fact>]
@@ -32,6 +32,6 @@ let ``fsharp set`` () =
   Assert.Equal(box input, box actual)
 
   let input = Seq.singleton 1
-  let actual = convert input
+  let actual = convertEq input
   Assert.Equal(box input, box actual)
 

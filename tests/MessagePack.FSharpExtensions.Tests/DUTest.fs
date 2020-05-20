@@ -49,18 +49,11 @@ with
 [<Fact>]
 let ``receive callback`` () =
   let input = Call
-  let actual = convert input
+  convertEq input |> ignore
   Assert.True(beforeCallback)
   Assert.True(afterCallback)
 
 module Compatibility =
-
-  open MessagePack.Resolvers
-  open MessagePack.FSharp
-
-  let convert<'T, 'U> (value: 'T) =
-    let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
-    MessagePackSerializer.Deserialize<'U>(MessagePackSerializer.Serialize(value, resolver), resolver)
 
   [<Union(0, typeof<CsA>)>]
   [<Union(1, typeof<CsB>)>]

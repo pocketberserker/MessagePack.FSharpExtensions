@@ -51,18 +51,11 @@ with
 [<Fact>]
 let ``receive callback struct union`` () =
   let input = StructCall
-  let actual = convert input
+  convertEq input |> ignore
   Assert.True(beforeStructCallback)
   Assert.True(afterStructCallback)
 
 module Compatibility =
-
-  open MessagePack.Resolvers
-  open MessagePack.FSharp
-
-  let convert<'T, 'U> (value: 'T) =
-    let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
-    MessagePackSerializer.Deserialize<'U>(MessagePackSerializer.Serialize(value, resolver), resolver)
 
   [<Union(0, typeof<CsE>)>]
   [<Union(1, typeof<CsF>)>]
