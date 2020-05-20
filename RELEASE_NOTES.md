@@ -1,3 +1,9 @@
+### 2.0.0 - May 21 2020
+* initial support MessagePack 2.x
+* update FSharp.Core 4.7.1
+* drop .NET Framework and netstandard1.6
+* support netstandard2.0 and netcoreapp2.1
+
 ### 1.4.1 - January 9 2019
 * Fix signalr interop #2
 * re-support netstandard1.6
