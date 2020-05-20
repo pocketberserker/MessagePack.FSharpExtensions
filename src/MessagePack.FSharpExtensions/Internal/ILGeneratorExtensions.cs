@@ -23,8 +23,57 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace MessagePack.FSharp.Internal
+namespace MessagePack.Internal
 {
+    internal struct ArgumentField
+    {
+        private readonly int i;
+        private readonly bool @ref;
+        private readonly ILGenerator il;
+
+        public ArgumentField(ILGenerator il, int i, bool @ref = false)
+        {
+            this.il = il;
+            this.i = i;
+            this.@ref = @ref;
+        }
+
+        public ArgumentField(ILGenerator il, int i, Type type)
+        {
+            this.il = il;
+            this.i = i;
+            TypeInfo ti = type.GetTypeInfo();
+            this.@ref = (ti.IsClass || ti.IsInterface || ti.IsAbstract) ? false : true;
+        }
+
+        public void EmitLoad()
+        {
+            if (this.@ref)
+            {
+                this.il.EmitLdarga(this.i);
+            }
+            else
+            {
+                this.il.EmitLdarg(this.i);
+            }
+        }
+
+        public void EmitLdarg()
+        {
+            this.il.EmitLdarg(this.i);
+        }
+
+        public void EmitLdarga()
+        {
+            this.il.EmitLdarga(this.i);
+        }
+
+        public void EmitStore()
+        {
+            this.il.EmitStarg(this.i);
+        }
+    }
+
     /// <summary>
     /// Provides optimized generation code and helpers.
     /// </summary>
@@ -58,13 +107,14 @@ namespace MessagePack.FSharp.Internal
                     {
                         il.Emit(OpCodes.Ldloc, (short)index);
                     }
+
                     break;
             }
         }
 
         public static void EmitLdloc(this ILGenerator il, LocalBuilder local)
         {
-            il.Emit(OpCodes.Ldloc, local);
+            EmitLdloc(il, local.LocalIndex);
         }
 
         /// <summary>
@@ -95,13 +145,14 @@ namespace MessagePack.FSharp.Internal
                     {
                         il.Emit(OpCodes.Stloc, (short)index);
                     }
+
                     break;
             }
         }
 
         public static void EmitStloc(this ILGenerator il, LocalBuilder local)
         {
-            il.Emit(OpCodes.Stloc, local);
+            EmitStloc(il, local.LocalIndex);
         }
 
         /// <summary>
@@ -121,7 +172,22 @@ namespace MessagePack.FSharp.Internal
 
         public static void EmitLdloca(this ILGenerator il, LocalBuilder local)
         {
-            il.Emit(OpCodes.Ldloca, local);
+            EmitLdloca(il, local.LocalIndex);
+        }
+
+        public static void EmitTrue(this ILGenerator il)
+        {
+            EmitBoolean(il, true);
+        }
+
+        public static void EmitFalse(this ILGenerator il)
+        {
+            EmitBoolean(il, false);
+        }
+
+        public static void EmitBoolean(this ILGenerator il, bool value)
+        {
+            EmitLdc_I4(il, value ? 1 : 0);
         }
 
         /// <summary>
@@ -170,7 +236,28 @@ namespace MessagePack.FSharp.Internal
                     {
                         il.Emit(OpCodes.Ldc_I4, value);
                     }
+
                     break;
+            }
+        }
+
+        public static void EmitUnboxOrCast(this ILGenerator il, Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                il.Emit(OpCodes.Unbox_Any, type);
+            }
+            else
+            {
+                il.Emit(OpCodes.Castclass, type);
+            }
+        }
+
+        public static void EmitBoxOrDoNothing(this ILGenerator il, Type type)
+        {
+            if (type.GetTypeInfo().IsValueType)
+            {
+                il.Emit(OpCodes.Box, type);
             }
         }
 
@@ -199,6 +286,7 @@ namespace MessagePack.FSharp.Internal
                     {
                         il.Emit(OpCodes.Ldarg, index);
                     }
+
                     break;
             }
         }
@@ -217,18 +305,6 @@ namespace MessagePack.FSharp.Internal
             else
             {
                 il.Emit(OpCodes.Ldarga, index);
-            }
-        }
-
-        public static void EmitLoadArg(this ILGenerator il, TypeInfo info, int index)
-        {
-            if (info.IsClass)
-            {
-                EmitLdarg(il, index);
-            }
-            else
-            {
-                EmitLdarga(il, index);
             }
         }
 
@@ -294,20 +370,25 @@ namespace MessagePack.FSharp.Internal
             il.Emit(OpCodes.Ret);
         }
 
+        public static void EmitULong(this ILGenerator il, ulong value)
+        {
+            il.Emit(OpCodes.Ldc_I8, unchecked((long)value));
+        }
+
         public static void EmitThrowNotimplemented(this ILGenerator il)
         {
             il.Emit(OpCodes.Newobj, typeof(System.NotImplementedException).GetTypeInfo().DeclaredConstructors.First(x => x.GetParameters().Length == 0));
             il.Emit(OpCodes.Throw);
         }
 
-        /// <summary>for  var i = 0, i ..., i++ </summary>
+        /// <summary>for  var i = 0, i ..., i++. </summary>
         public static void EmitIncrementFor(this ILGenerator il, LocalBuilder conditionGreater, Action<LocalBuilder> emitBody)
         {
-            var loopBegin = il.DefineLabel();
-            var condtionLabel = il.DefineLabel();
+            Label loopBegin = il.DefineLabel();
+            Label condtionLabel = il.DefineLabel();
 
             // var i = 0
-            var forI = il.DeclareLocal(typeof(int));
+            LocalBuilder forI = il.DeclareLocal(typeof(int));
             il.EmitLdc_I4(0);
             il.EmitStloc(forI);
             il.Emit(OpCodes.Br, condtionLabel);

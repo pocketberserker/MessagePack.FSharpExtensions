@@ -8,31 +8,32 @@ namespace MessagePack.FSharp.Formatters
 
         public FSharpAsyncFormatter() { }
 
-        public int Serialize(ref byte[] bytes, int offset, FSharpAsync<T> value, IFormatterResolver formatterResolver)
+        public void Serialize(ref MessagePackWriter writer, FSharpAsync<T> value, MessagePackSerializerOptions options)
         {
             if (value == null)
             {
-                return MessagePackBinary.WriteNil(ref bytes, offset);
+                writer.WriteNil();
+                return;
             }
             else
             {
                 var v = FSharpAsync.RunSynchronously(value, null, null);
-                return formatterResolver.GetFormatterWithVerify<T>().Serialize(ref bytes, offset, v, formatterResolver);
+                IFormatterResolver resolver = options.Resolver;
+                resolver.GetFormatterWithVerify<T>().Serialize(ref writer, v, options);
             }
         }
 
-        public FSharpAsync<T> Deserialize(byte[] bytes, int offset, IFormatterResolver formatterResolver, out int readSize)
+        public FSharpAsync<T> Deserialize(ref MessagePackReader reader, MessagePackSerializerOptions options)
         {
-            if (MessagePackBinary.IsNil(bytes, offset))
+            if (reader.TryReadNil())
             {
-                readSize = 1;
-                return null;
+                return default;
             }
-            else
-            {
-                var v = formatterResolver.GetFormatterWithVerify<T>().Deserialize(bytes, offset, formatterResolver, out readSize);
-                return Microsoft.FSharp.Core.ExtraTopLevelOperators.DefaultAsyncBuilder.Return(v);
-            }
+            IFormatterResolver resolver = options.Resolver;
+            options.Security.DepthStep(ref reader);
+            T value = resolver.GetFormatterWithVerify<T>().Deserialize(ref reader, options);;
+            reader.Depth--;
+            return Microsoft.FSharp.Core.ExtraTopLevelOperators.DefaultAsyncBuilder.Return(value);
         }
     }
 }

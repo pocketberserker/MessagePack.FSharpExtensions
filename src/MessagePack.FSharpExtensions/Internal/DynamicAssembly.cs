@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Yoshifumi Kawai
+// Copyright (c) 2017 Yoshifumi Kawai and contributors
 
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,6 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System;
 using System.Reflection;
 using System.Reflection.Emit;
 
@@ -28,18 +29,41 @@ namespace MessagePack.FSharp.Internal
         readonly AssemblyBuilder assemblyBuilder;
         readonly ModuleBuilder moduleBuilder;
 
+        private readonly object gate = new object();
+
         public ModuleBuilder ModuleBuilder { get { return moduleBuilder; } }
 
         public DynamicAssembly(string moduleName)
         {
+            AssemblyBuilderAccess builderAccess = AssemblyBuilderAccess.Run;
+            this.assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(moduleName), builderAccess);
+            this.moduleBuilder = this.assemblyBuilder.DefineDynamicModule(moduleName + ".dll");
+        }
 
-#if NETSTANDARD
-            this.assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName(moduleName), AssemblyBuilderAccess.Run);
-#else
-            this.assemblyBuilder = System.AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(moduleName), AssemblyBuilderAccess.Run);
-#endif
+        /* requires lock on mono environment. see: https://github.com/neuecc/MessagePack-CSharp/issues/161 */
 
-            this.moduleBuilder = assemblyBuilder.DefineDynamicModule(moduleName);
+        public TypeBuilder DefineType(string name, TypeAttributes attr)
+        {
+            lock (this.gate)
+            {
+                return this.moduleBuilder.DefineType(name, attr);
+            }
+        }
+
+        public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent)
+        {
+            lock (this.gate)
+            {
+                return this.moduleBuilder.DefineType(name, attr, parent);
+            }
+        }
+
+        public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent, Type[] interfaces)
+        {
+            lock (this.gate)
+            {
+                return this.moduleBuilder.DefineType(name, attr, parent, interfaces);
+            }
         }
     }
 }

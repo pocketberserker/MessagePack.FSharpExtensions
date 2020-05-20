@@ -7,7 +7,7 @@ namespace MessagePack.FSharp.Formatters
 {
     public sealed class FSharpListFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpList<T>>
     {
-        protected override void Add(T[] collection, int index, T value)
+        protected override void Add(T[] collection, int index, T value, MessagePackSerializerOptions options)
         {
             collection[index] = value;
         }
@@ -17,7 +17,7 @@ namespace MessagePack.FSharp.Formatters
             return ListModule.OfArray(intermediateCollection);
         }
 
-        protected override T[] Create(int count)
+        protected override T[] Create(int count, MessagePackSerializerOptions options)
         {
             return new T[count];
         }
@@ -30,7 +30,7 @@ namespace MessagePack.FSharp.Formatters
 
     public sealed class FSharpMapFormatter<TKey, TValue> : DictionaryFormatterBase<TKey, TValue, Tuple<TKey, TValue>[], IEnumerator<KeyValuePair<TKey, TValue>>, FSharpMap<TKey, TValue>>
     {
-        protected override void Add(Tuple<TKey, TValue>[] collection, int index, TKey key, TValue value)
+        protected override void Add(Tuple<TKey, TValue>[] collection, int index, TKey key, TValue value, MessagePackSerializerOptions options)
         {
             collection[index] = Tuple.Create(key, value);
         }
@@ -40,7 +40,7 @@ namespace MessagePack.FSharp.Formatters
             return MapModule.OfArray(intermediateCollection);
         }
 
-        protected override Tuple<TKey, TValue>[] Create(int count)
+        protected override Tuple<TKey, TValue>[] Create(int count, MessagePackSerializerOptions options)
         {
             return new Tuple<TKey, TValue>[count];
         }
@@ -53,7 +53,7 @@ namespace MessagePack.FSharp.Formatters
 
     public sealed class FSharpSetFormatter<T> : CollectionFormatterBase<T, T[], IEnumerator<T>, FSharpSet<T>>
     {
-        protected override void Add(T[] collection, int index, T value)
+        protected override void Add(T[] collection, int index, T value, MessagePackSerializerOptions options)
         {
             collection[index] = value;
         }
@@ -63,7 +63,7 @@ namespace MessagePack.FSharp.Formatters
             return SetModule.OfArray(intermediateCollection);
         }
 
-        protected override T[] Create(int count)
+        protected override T[] Create(int count, MessagePackSerializerOptions options)
         {
             return new T[count];
         }

@@ -1,21 +1,15 @@
 # MessagePack.FSharpExtensions
 [![NuGet Status](http://img.shields.io/nuget/v/MessagePack.FSharpExtensions.svg?style=flat)](https://www.nuget.org/packages/MessagePack.FSharpExtensions/)
-[![Build status](https://ci.appveyor.com/api/projects/status/bbmylbd0o5mkrptb/branch/master?svg=true)](https://ci.appveyor.com/project/pocketberserker/messagepack-fsharpextensions/branch/master)
-[![Build Status](https://travis-ci.org/pocketberserker/MessagePack.FSharpExtensions.svg?branch=master)](https://travis-ci.org/pocketberserker/MessagePack.FSharpExtensions)
 
 MessagePack.FSharpExtensions is a [MessagePack-CSharp](https://github.com/neuecc/MessagePack-CSharp) extension library for F#.
 
 ## Usage
 
 ```fsharp
+open System.Buffers
 open MessagePack
 open MessagePack.Resolvers
 open MessagePack.FSharp
-
-CompositeResolver.RegisterAndSetAsDefault(
-  FSharpResolver.Instance,
-  StandardResolver.Instance
-)
 
 [<MessagePackObject>]
 type UnionSample =
@@ -24,9 +18,10 @@ type UnionSample =
 
 let data = Foo 999
 
-let bin = MessagePackSerializer.Serialize(data)
+let options = MessagePackSerializerOptions.Standard.WithResolver(FSharpResolver.Instance)
+let bin = ReadOnlySequence(MessagePackSerializer.Serialize(data, options))
 
-match MessagePackSerializer.Deserialize<UnionSample>(bin) with
+match MessagePackSerializer.Deserialize<UnionSample>(& bin, options) with
 | Foo x ->
   printfn "%d" x
 | Bar xs ->
