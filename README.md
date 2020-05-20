@@ -6,14 +6,10 @@ MessagePack.FSharpExtensions is a [MessagePack-CSharp](https://github.com/neuecc
 ## Usage
 
 ```fsharp
+open System.Buffers
 open MessagePack
 open MessagePack.Resolvers
 open MessagePack.FSharp
-
-CompositeResolver.RegisterAndSetAsDefault(
-  FSharpResolver.Instance,
-  StandardResolver.Instance
-)
 
 [<MessagePackObject>]
 type UnionSample =
@@ -22,9 +18,10 @@ type UnionSample =
 
 let data = Foo 999
 
-let bin = MessagePackSerializer.Serialize(data)
+let options = MessagePackSerializerOptions.Standard.WithResolver(FSharpResolver.Instance)
+let bin = ReadOnlySequence(MessagePackSerializer.Serialize(data, options))
 
-match MessagePackSerializer.Deserialize<UnionSample>(bin) with
+match MessagePackSerializer.Deserialize<UnionSample>(& bin, options) with
 | Foo x ->
   printfn "%d" x
 | Bar xs ->
