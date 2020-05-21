@@ -1,7 +1,7 @@
 [<AutoOpen>]
 module MessagePack.Tests.Helper
 
-open System.Buffers
+open System
 open MessagePack
 open MessagePack.Resolvers
 open MessagePack.FSharp
@@ -17,7 +17,6 @@ let convert<'T, 'U>(value: 'T) =
   let resolver = WithFSharpDefaultResolver() :> IFormatterResolver
   let options = MessagePackSerializerOptions.Standard.WithResolver(resolver)
   let bytes = MessagePackSerializer.Serialize(value, options)
-  let sequence = ReadOnlySequence(bytes)
-  MessagePackSerializer.Deserialize<'U>(& sequence, options)
+  MessagePackSerializer.Deserialize<'U>(ReadOnlyMemory(bytes), options)
 
 let convertEq (value: 'T) = convert<'T, 'T> value
