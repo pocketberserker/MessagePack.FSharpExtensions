@@ -62,15 +62,20 @@ namespace MessagePack.FSharp
             if (ti.IsGenericType)
             {
                 var genericType = ti.GetGenericTypeDefinition();
+                var gti = genericType.GetTypeInfo();
 
                 Type formatterType;
                 if (formatterMap.TryGetValue(genericType, out formatterType))
                 {
                     return CreateInstance(formatterType, ti.GenericTypeArguments);
                 }
-                else if (genericType.GetTypeInfo().IsFSharpOption())
+                else if (gti.IsFSharpOption())
                 {
                     return CreateInstance(typeof(FSharpOptionFormatter<>), new[] { ti.GenericTypeArguments[0] });
+                }
+                else if (gti.IsFSharpValueOption())
+                {
+                    return CreateInstance(typeof(FSharpValueOptionFormatter<>), new[] { ti.GenericTypeArguments[0] });
                 }
             }
 
@@ -88,6 +93,11 @@ namespace MessagePack.FSharp
         public static bool IsFSharpOption(this TypeInfo type)
         {
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(FSharpOption<>);
+        }
+
+        public static bool IsFSharpValueOption(this TypeInfo type)
+        {
+            return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(FSharpValueOption<>);
         }
     }
 }
