@@ -6,6 +6,7 @@ MessagePack.FSharpExtensions is a [MessagePack-CSharp](https://github.com/neuecc
 ## Usage
 
 ```fsharp
+open System
 open System.Buffers
 open MessagePack
 open MessagePack.Resolvers
@@ -16,14 +17,41 @@ type UnionSample =
   | Foo of XYZ : int
   | Bar of OPQ : string list
 
-let data = Foo 999
+let convertAsMemory<'T> options (value: 'T) =
+  let memory = ReadOnlyMemory(MessagePackSerializer.Serialize(data, options))
+  MessagePackSerializer.Deserialize<'T>(memory, options)
 
-let options = MessagePackSerializerOptions.Standard.WithResolver(FSharpResolver.Instance)
-let bin = ReadOnlySequence(MessagePackSerializer.Serialize(data, options))
+let convertAsSequence<'T> options (value: 'T) =
+  let sequence = ReadOnlySequence(MessagePackSerializer.Serialize(data, options))
+  MessagePackSerializer.Deserialize<'T>(& sequence, options)
 
-match MessagePackSerializer.Deserialize<UnionSample>(& bin, options) with
+let dump = function
 | Foo x ->
   printfn "%d" x
 | Bar xs ->
   printfn "%A" xs
+
+let data = Foo 999
+
+let options = MessagePackSerializerOptions.Standard.WithResolver(FSharpResolver.Instance)
+
+Foo 999
+|> convertAsMemory options
+|> dump
+
+Bar ["example"]
+|> convertAsSequence options
+|> dump
 ```
+
+## Supported types
+
+- option
+- voption
+- list
+- map
+- set
+- Discriminated Union
+- Struct Discriminated Union
+
+Records, Struct Records and Anonymous Records are serialized and deserialized using `DynamicObjectResolver` in `MessagePack-CSharp`.
