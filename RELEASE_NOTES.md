@@ -1,3 +1,6 @@
+### 2.1.0 - May 21 2020
+* add voption formatter
+
 ### 2.0.0 - May 21 2020
 * initial support MessagePack 2.x
 * update FSharp.Core 4.7.1
