@@ -6,7 +6,7 @@
     <Authors>pocketberserker</Authors>
     <Owners>pocketberserker</Owners>
     <PackageProjectUrl>https://github.com/pocketberserker/MessagePack.FSharpExtensions</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/pocketberserker/MessagePack.FSharpExtensions/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <Description>MessagePack extensions for F#</Description>
     <PackageTags>F#;fsharp;Msgpack;MessagePack;Serialization;Formatter;Serializer</PackageTags>
