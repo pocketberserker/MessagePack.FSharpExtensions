@@ -48,3 +48,10 @@ let ``struct record`` () =
   let input = { X = 1; Y = 2 }
   let actual = convert input
   Assert.Equal(input, actual)
+
+[<Fact>]
+let ``anonymous record`` () =
+
+  let input = {| Foo = 1; Bar = 2 |}
+  let actual = convert input
+  Assert.Equal(input, actual)
