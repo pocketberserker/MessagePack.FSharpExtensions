@@ -31,7 +31,13 @@ let dump = function
 | Bar xs ->
   printfn "%A" xs
 
-let options = MessagePackSerializerOptions.Standard.WithResolver(FSharpResolver.Instance)
+let resolver =
+  Resolvers.CompositeResolver.Create(
+    FSharpResolver.Instance,
+    StandardResolver.Instance
+)
+
+let options = MessagePackSerializerOptions.Standard.WithResolver(resolver)
 
 Foo 999
 |> convertAsMemory options
