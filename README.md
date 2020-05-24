@@ -18,11 +18,11 @@ type UnionSample =
   | Bar of OPQ : string list
 
 let convertAsMemory<'T> options (value: 'T) =
-  let memory = ReadOnlyMemory(MessagePackSerializer.Serialize(data, options))
+  let memory = ReadOnlyMemory(MessagePackSerializer.Serialize(value, options))
   MessagePackSerializer.Deserialize<'T>(memory, options)
 
 let convertAsSequence<'T> options (value: 'T) =
-  let sequence = ReadOnlySequence(MessagePackSerializer.Serialize(data, options))
+  let sequence = ReadOnlySequence(MessagePackSerializer.Serialize(value, options))
   MessagePackSerializer.Deserialize<'T>(& sequence, options)
 
 let dump = function
@@ -30,8 +30,6 @@ let dump = function
   printfn "%d" x
 | Bar xs ->
   printfn "%A" xs
-
-let data = Foo 999
 
 let options = MessagePackSerializerOptions.Standard.WithResolver(FSharpResolver.Instance)
 
