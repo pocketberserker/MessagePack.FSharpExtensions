@@ -39,7 +39,7 @@ namespace MessagePack.FSharp
 
         const string ModuleName = "MessagePack.FSharp.DynamicUnionResolver";
 
-        static readonly DynamicAssembly DynamicAssembly;
+        static readonly Lazy<DynamicAssembly> DynamicAssembly;
 
         static readonly Regex SubtractFullNameRegex = new Regex(@", Version=\d+.\d+.\d+.\d+, Culture=\w+, PublicKeyToken=\w+", RegexOptions.Compiled);
 
@@ -50,7 +50,7 @@ namespace MessagePack.FSharp
         static DynamicUnionResolver()
         {
             Instance = new DynamicUnionResolver();
-            DynamicAssembly = new DynamicAssembly(ModuleName);
+            DynamicAssembly = new Lazy<DynamicAssembly>(() => new DynamicAssembly(ModuleName));
         }
 
         public IMessagePackFormatter<T> GetFormatter<T>()
@@ -88,7 +88,7 @@ namespace MessagePack.FSharp
             var unionCases = FSharpType.GetUnionCases(type, null).OrderBy(x => x.Tag).ToArray();
 
             var formatterType = typeof(IMessagePackFormatter<>).MakeGenericType(type);
-            TypeBuilder typeBuilder = DynamicAssembly.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, string.Empty).Replace(".", "_") + "Formatter" + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
+            TypeBuilder typeBuilder = DynamicAssembly.Value.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, string.Empty).Replace(".", "_") + "Formatter" + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
 
             var stringByteKeysFields = new FieldBuilder[unionCases.Length];
 
