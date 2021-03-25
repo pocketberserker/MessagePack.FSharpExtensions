@@ -39,7 +39,7 @@ namespace MessagePack.FSharp
 
         const string ModuleName = "MessagePack.FSharp.DynamicUnionResolver";
 
-        static readonly DynamicAssembly DynamicAssembly;
+        static readonly Lazy<DynamicAssembly> DynamicAssembly;
 
         static readonly Regex SubtractFullNameRegex = new Regex(@", Version=\d+.\d+.\d+.\d+, Culture=\w+, PublicKeyToken=\w+", RegexOptions.Compiled);
 
@@ -50,7 +50,7 @@ namespace MessagePack.FSharp
         static DynamicUnionResolver()
         {
             Instance = new DynamicUnionResolver();
-            DynamicAssembly = new DynamicAssembly(ModuleName);
+            DynamicAssembly = new Lazy<DynamicAssembly>(() => new DynamicAssembly(ModuleName));
         }
 
         public IMessagePackFormatter<T> GetFormatter<T>()
@@ -88,56 +88,59 @@ namespace MessagePack.FSharp
             var unionCases = FSharpType.GetUnionCases(type, null).OrderBy(x => x.Tag).ToArray();
 
             var formatterType = typeof(IMessagePackFormatter<>).MakeGenericType(type);
-            TypeBuilder typeBuilder = DynamicAssembly.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, string.Empty).Replace(".", "_") + "Formatter" + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
-
-            var stringByteKeysFields = new FieldBuilder[unionCases.Length];
-
-            // create map dictionary
+            using (MonoProtection.EnterRefEmitLock())
             {
-                var method = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
-
-                foreach(var unionCase in unionCases)
+                TypeBuilder typeBuilder = DynamicAssembly.Value.DefineType("MessagePack.FSharp.Formatters." + SubtractFullNameRegex.Replace(type.FullName, string.Empty).Replace(".", "_") + "Formatter" + +Interlocked.Increment(ref nameSequence), TypeAttributes.Public | TypeAttributes.Sealed, null, new[] { formatterType });
+    
+                var stringByteKeysFields = new FieldBuilder[unionCases.Length];
+    
+                // create map dictionary
                 {
-                  stringByteKeysFields[unionCase.Tag] = typeBuilder.DefineField("stringByteKeysField" + unionCase.Tag, typeof(byte[][]), FieldAttributes.Private | FieldAttributes.InitOnly);
+                    var method = typeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, Type.EmptyTypes);
+    
+                    foreach(var unionCase in unionCases)
+                    {
+                      stringByteKeysFields[unionCase.Tag] = typeBuilder.DefineField("stringByteKeysField" + unionCase.Tag, typeof(byte[][]), FieldAttributes.Private | FieldAttributes.InitOnly);
+                    }
+    
+                    var il = method.GetILGenerator();
+                    BuildConstructor(type, unionCases, method, stringByteKeysFields, il);
                 }
-
-                var il = method.GetILGenerator();
-                BuildConstructor(type, unionCases, method, stringByteKeysFields, il);
+    
+                {
+                    var method = typeBuilder.DefineMethod(
+                        "Serialize",
+                        MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual,
+                        returnType: null,
+                        parameterTypes: new Type[] { typeof(MessagePackWriter).MakeByRefType(), type, typeof(MessagePackSerializerOptions) });
+                    method.DefineParameter(1, ParameterAttributes.None, "writer");
+                    method.DefineParameter(2, ParameterAttributes.None, "value");
+                    method.DefineParameter(3, ParameterAttributes.None, "options");
+    
+                    var il = method.GetILGenerator();
+                    BuildSerialize(type, unionCases, method, stringByteKeysFields, il, 1);
+                }
+                {
+                    MethodBuilder method = typeBuilder.DefineMethod(
+                        "Deserialize",
+                        MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual,
+                        type,
+                        new Type[] { refMessagePackReader, typeof(MessagePackSerializerOptions) });
+                    method.DefineParameter(1, ParameterAttributes.None, "reader");
+                    method.DefineParameter(2, ParameterAttributes.None, "options");
+    
+                    var il = method.GetILGenerator();
+                    BuildDeserialize(
+                        type,
+                        unionCases,
+                        method,
+                        stringByteKeysFields,
+                        il,
+                        1); // firstArgIndex:0 is this.
+                }
+    
+                return typeBuilder.CreateTypeInfo();
             }
-
-            {
-                var method = typeBuilder.DefineMethod(
-                    "Serialize",
-                    MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual,
-                    returnType: null,
-                    parameterTypes: new Type[] { typeof(MessagePackWriter).MakeByRefType(), type, typeof(MessagePackSerializerOptions) });
-                method.DefineParameter(1, ParameterAttributes.None, "writer");
-                method.DefineParameter(2, ParameterAttributes.None, "value");
-                method.DefineParameter(3, ParameterAttributes.None, "options");
-
-                var il = method.GetILGenerator();
-                BuildSerialize(type, unionCases, method, stringByteKeysFields, il, 1);
-            }
-            {
-                MethodBuilder method = typeBuilder.DefineMethod(
-                    "Deserialize",
-                    MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual,
-                    type,
-                    new Type[] { refMessagePackReader, typeof(MessagePackSerializerOptions) });
-                method.DefineParameter(1, ParameterAttributes.None, "reader");
-                method.DefineParameter(2, ParameterAttributes.None, "options");
-
-                var il = method.GetILGenerator();
-                BuildDeserialize(
-                    type,
-                    unionCases,
-                    method,
-                    stringByteKeysFields,
-                    il,
-                    1); // firstArgIndex:0 is this.
-            }
-
-            return typeBuilder.CreateTypeInfo();
         }
 
         static void BuildConstructor(Type type, UnionCaseInfo[] infos, ConstructorInfo method, FieldBuilder[] stringByteKeysFields, ILGenerator il)

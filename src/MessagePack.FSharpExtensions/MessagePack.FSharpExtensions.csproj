@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Version>2.1.0</Version>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.1</TargetFrameworks>
-    <DefineConstants Condition=" '$(TargetFramework)' == 'netcoreapp2.1' ">$(DefineConstants);SPAN_BUILTIN</DefineConstants>
+    <TargetFrameworks>netstandard2.0;netcoreapp2.1;netcoreapp3.1;net5.0</TargetFrameworks>
+    <DefineConstants Condition=" '$(TargetFramework)' != 'netstandard2.0' ">$(DefineConstants);SPAN_BUILTIN</DefineConstants>
+    <LangVersion>8.0</LangVersion>
     <Authors>pocketberserker</Authors>
     <Owners>pocketberserker</Owners>
     <PackageProjectUrl>https://github.com/pocketberserker/MessagePack.FSharpExtensions</PackageProjectUrl>
@@ -12,7 +13,7 @@
     <PackageTags>F#;fsharp;Msgpack;MessagePack;Serialization;Formatter;Serializer</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.1.115" />
-    <PackageReference Include="FSharp.Core" Version="4.7.1" />
+    <PackageReference Include="MessagePack" Version="2.3.58-alpha" />
+    <PackageReference Include="FSharp.Core" Version="5.0.1" />
   </ItemGroup>
 </Project>

@@ -29,8 +29,6 @@ namespace MessagePack.FSharp.Internal
         readonly AssemblyBuilder assemblyBuilder;
         readonly ModuleBuilder moduleBuilder;
 
-        private readonly object gate = new object();
-
         public ModuleBuilder ModuleBuilder { get { return moduleBuilder; } }
 
         public DynamicAssembly(string moduleName)
@@ -42,28 +40,10 @@ namespace MessagePack.FSharp.Internal
 
         /* requires lock on mono environment. see: https://github.com/neuecc/MessagePack-CSharp/issues/161 */
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr)
-        {
-            lock (this.gate)
-            {
-                return this.moduleBuilder.DefineType(name, attr);
-            }
-        }
+        public TypeBuilder DefineType(string name, TypeAttributes attr) => this.moduleBuilder.DefineType(name, attr);
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent)
-        {
-            lock (this.gate)
-            {
-                return this.moduleBuilder.DefineType(name, attr, parent);
-            }
-        }
+        public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent) => this.moduleBuilder.DefineType(name, attr, parent);
 
-        public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent, Type[] interfaces)
-        {
-            lock (this.gate)
-            {
-                return this.moduleBuilder.DefineType(name, attr, parent, interfaces);
-            }
-        }
+        public TypeBuilder DefineType(string name, TypeAttributes attr, Type parent, Type[] interfaces) => this.moduleBuilder.DefineType(name, attr, parent, interfaces);
     }
 }
