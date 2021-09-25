@@ -6,6 +6,7 @@
     <LangVersion>8.0</LangVersion>
     <Authors>pocketberserker</Authors>
     <Owners>pocketberserker</Owners>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/pocketberserker/MessagePack.FSharpExtensions</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
@@ -15,5 +16,6 @@
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="2.3.75" />
     <PackageReference Include="FSharp.Core" Version="5.0.1" />
+    <None Include="../../README.md" Pack="true" PackagePath="/"/>
   </ItemGroup>
 </Project>
