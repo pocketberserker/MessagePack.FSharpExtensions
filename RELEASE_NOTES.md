@@ -1,3 +1,8 @@
+### 3.0.0 - September 26 2021
+* support net50(use FSharp.Core 5.0.x)
+* support netcoreapp3.1
+* update MessagePack(to 2.3.x)
+
 ### 2.1.0 - May 21 2020
 * add voption formatter
 
