@@ -1,3 +1,8 @@
+### 4.0.0 - February 19 2023
+* drop net50
+* update FSharp.Core(to 7.0.200)
+* update MessagePack(to 2.4.59)
+
 ### 3.0.0 - September 26 2021
 * support net50(use FSharp.Core 5.0.x)
 * support netcoreapp3.1
