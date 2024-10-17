@@ -14,7 +14,7 @@
     <PackageTags>F#;fsharp;Msgpack;MessagePack;Serialization;Formatter;Serializer</PackageTags>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="2.4.59" />
+    <PackageReference Include="MessagePack" Version="2.5.187" />
     <PackageReference Include="FSharp.Core" Version="7.0.200" />
     <None Include="../../README.md" Pack="true" PackagePath="/"/>
   </ItemGroup>
